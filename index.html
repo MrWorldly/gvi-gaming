@@ -985,9 +985,10 @@ function OwnedTable({games,onSelect,selected,sortKey,sortDir,onSortChange,filter
   const toggleSort=k=>{if(sortKey===k)onSortChange(k,sortDir==="asc"?"desc":"asc");else onSortChange(k,"desc");};
 
   const filtered=[...games]
-    .filter(g=>filterStatus==="All"||g.status===filterStatus)
-    .filter(g=>filterPlatform==="All"||(g.platform||"").includes(filterPlatform))
-    .filter(g=>!search||g.title.toLowerCase().includes(search.toLowerCase()))
+    .filter(g=>search
+      ? g.title.toLowerCase().includes(search.toLowerCase())
+      : (filterStatus==="All"||g.status===filterStatus) && (filterPlatform==="All"||(g.platform||"").includes(filterPlatform))
+    )
     .sort((a,b)=>{
       const eff=g=>sortKey==="personalRating"?(g.personalRating??g.projRating):g[sortKey];
       const va=eff(a)??(sortDir==="desc"?-Infinity:Infinity);
@@ -1008,7 +1009,9 @@ function OwnedTable({games,onSelect,selected,sortKey,sortDir,onSortChange,filter
         <Chips options={["All","In Progress","Not Started","Completed","Abandoned"]} active={filterStatus} onChange={onFilterStatusChange}/>
         <Chips options={["All","PS5","PS4","Switch 2","Switch","Steam","SNES"]} active={filterPlatform} onChange={setFilterPlatform}/>
       </div>
-      <div style={{fontSize:9,letterSpacing:0.5,fontFamily:"'JetBrains Mono',monospace",color:"#94a3b8",marginBottom:6}}>{filtered.length} / {games.length} ENTRIES</div>
+      <div style={{fontSize:9,letterSpacing:0.5,fontFamily:"'JetBrains Mono',monospace",color:"#94a3b8",marginBottom:6}}>
+        {search ? `${filtered.length} result${filtered.length===1?"":"s"} for "${search}"` : `${filtered.length} / ${games.length} ENTRIES`}
+      </div>
       <div style={{overflowX:"auto",background:"#0a1628",border:"1px solid #1e293b",borderRadius:4}}>
         <table style={{width:"100%",borderCollapse:"collapse",minWidth:700}}>
           <thead><tr style={{borderBottom:"1px solid #1e293b"}}>
@@ -1038,8 +1041,10 @@ function WishlistTable({items,onSelect,selected,sortKey,sortDir,onSortChange}){
   const[search,setSearch]=useState("");
   const toggleSort=k=>{if(sortKey===k)onSortChange(k,sortDir==="asc"?"desc":"asc");else onSortChange(k,"desc");};
   const filtered=[...items]
-    .filter(g=>filterPlatform==="All"||(g.platform||"").includes(filterPlatform))
-    .filter(g=>!search||g.title.toLowerCase().includes(search.toLowerCase()))
+    .filter(g=>search
+      ? g.title.toLowerCase().includes(search.toLowerCase())
+      : filterPlatform==="All"||(g.platform||"").includes(filterPlatform)
+    )
     .sort((a,b)=>{const va=a[sortKey]??(sortDir==="desc"?-Infinity:Infinity),vb=b[sortKey]??(sortDir==="desc"?-Infinity:Infinity);if(typeof va==="string")return sortDir==="asc"?va.localeCompare(vb):vb.localeCompare(va);return sortDir==="asc"?va-vb:vb-va;});
   return(
     <div>
@@ -1050,7 +1055,9 @@ function WishlistTable({items,onSelect,selected,sortKey,sortDir,onSortChange}){
         </div>
         <Chips options={["All","PS5","PS4","Switch 2","Switch","Steam"]} active={filterPlatform} onChange={setFilterPlatform}/>
       </div>
-      <div style={{fontSize:9,letterSpacing:0.5,fontFamily:"'JetBrains Mono',monospace",color:"#94a3b8",marginBottom:6}}>{filtered.length} / {items.length} ENTRIES</div>
+      <div style={{fontSize:9,letterSpacing:0.5,fontFamily:"'JetBrains Mono',monospace",color:"#94a3b8",marginBottom:6}}>
+        {search ? `${filtered.length} result${filtered.length===1?"":"s"} for "${search}"` : `${filtered.length} / ${items.length} ENTRIES`}
+      </div>
       <div style={{overflowX:"auto",background:"#0a1628",border:"1px solid #1e293b",borderRadius:4}}>
         <table style={{width:"100%",borderCollapse:"collapse",minWidth:500}}>
           <thead><tr style={{borderBottom:"1px solid #1e293b"}}>
