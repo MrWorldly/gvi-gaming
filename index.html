@@ -5,19 +5,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>GVI Library Tracker</title>
-<div id="fatal-error" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#060e1e;color:#f87171;font-family:monospace;padding:32px;z-index:9999;white-space:pre-wrap;overflow:auto;font-size:12px;"></div>
-<script>window.onerror=function(m,s,l,c,e){var d=document.getElementById('fatal-error');if(d){d.style.display='block';d.textContent='FATAL ERROR\n'+m+'\n'+s+':'+l+'\n'+(e&&e.stack?e.stack:'');}};</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-<script>
-const {useState,useEffect,useRef,useCallback,useMemo}=React;
-</script>
 </head>
 <body style="margin:0;background:#060e1e;">
+<div id="fatal-error" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#060e1e;color:#f87171;font-family:monospace;padding:32px;z-index:9999;white-space:pre-wrap;overflow:auto;font-size:12px;"></div>
 <div id="root"></div>
 <script>
-import { useState, useEffect, useCallback, useRef } from "react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
+window.onerror=function(m,s,l,c,e){var d=document.getElementById('fatal-error');if(d){d.style.display='block';d.textContent='FATAL ERROR\n'+m+'\n'+s+':'+l+'\n'+(e&&e.stack?e.stack:'');}}; 
+const {useState,useEffect,useRef,useCallback,useMemo}=React;
 
 // \u2500\u2500\u2500 GVI FORMULA \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function calcPersonalRating(g, i, a, m, r) {
