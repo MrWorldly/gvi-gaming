@@ -52,17 +52,6 @@ function calcGVI(gameplay, story, art, musicSound, replay, hoursPlayed, price, s
   return { personalRating:pr, ratingsComp, hoursComp, priceComp, baseGVI, completionAdj, finalGVI };
 }
 
-// ─── SEED DATA ────────────────────────────────────────────────────────────────
-const OWNED_SEED = [
-  {title:"DOOM 2016",status:"Completed",platform:"PS5",purchaseDate:"",completionDate:"",estHours:20,hoursPlayed:22,price:7.99,difficulty:6,gameplay:9,story:7,art:8,musicSound:10,replay:6,projRating:7.0,projGVI:0.748,notes:"Possibly all-time. Arena shooter DNA fully confirmed.",personalRating:9.25,actualGVI:0.997,gviDelta:0.249,ratingDelta:2.25},
-  {title:"DOOM Eternal",status:"In Progress",platform:"PS5",purchaseDate:"",completionDate:"",estHours:25,hoursPlayed:5,price:7.99,difficulty:8,gameplay:null,story:null,art:null,musicSound:null,replay:null,projRating:8.0,projGVI:0.820,notes:"High cognitive load — inventory management concern",personalRating:null,actualGVI:null,gviDelta:null,ratingDelta:null},
-];
-
-
-const WISHLIST_SEED = [
-  {title:"NieR: Automata",targetPrice:18,platform:"PS5",projGVI:0.760,projRating:8.5,dekuLink:"https://www.dekudeals.com/items/nier-automata-game-of-the-yorha-edition"},
-  {title:"Ghost of Tsushima Director's Cut",targetPrice:35,platform:"PS5",projGVI:0.790,projRating:null,dekuLink:"https://www.dekudeals.com/items/ghost-of-tsushima-directors-cut"},
-];
 
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -632,8 +621,10 @@ function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre,onSaveFie
   );
 }
 
-// ─── SYSTEM PROMPT FOR PROJECTION ────────────────────────────────────────────
-const PROJECTION_SYSTEM_PROMPT = `You are a gaming advisor generating a projected enjoyment note for a specific player profile. Your job is to assess a game and return structured JSON.
+// ─── DEFAULT PROMPTS (used when config Gist has no prompts set) ──────────────
+// Prompts are stored in and loaded from the config Gist at runtime.
+// These defaults are only used to pre-populate the prompts editor on first setup.
+const DEFAULT_PROJECTION_PROMPT = `You are a gaming advisor generating a projected enjoyment note for a specific player profile. Your job is to assess a game and return structured JSON.
 
 ## PLAYER PROFILE
 
@@ -705,9 +696,105 @@ Always generate a FRESH projection. Never reference or reuse values from any pre
 - If the answer is "no," say "no"
 - One paragraph for the enjoyment note, under 150 words
 - Reference the player's confirmed calibration data when it applies (e.g. "arena shooter DNA is confirmed underweighted," "DOOM 2016 delta applies here")`;
+const DEFAULT_WEEKLY_PROMPT = `You are generating a weekly gaming activity report. You will receive the CURRENT library state and a SNAPSHOT from the last weekly report. Your job is to identify and narrate everything that changed between the snapshot and now.
+
+Output Markdown only. Use \\$ for dollar signs. GVI to 3 decimal places. Write each section as a brief narrative — not bullet dumps. If a section has nothing to report, omit it entirely. Use Roman numeral → Arabic format: "Final Fantasy XVI (16)".
+
+## What I Played
+For each In Progress game where hoursPlayed increased since the snapshot: name, hours last week → hours this week, delta (+Xh), and percent complete (hoursPlayed / estHours × 100, shown as X%). If estHours is null, omit the percent. Only show In Progress games — not Completed or Not Started. If no hours changed, omit this section.
+
+## What I Bought
+Games that exist in current owned but did NOT exist in the snapshot owned list (i.e. newly purchased this week — moved from wishlist or added fresh). Show: name, price paid, platform. If nothing new, omit.
+
+## What I Started
+Games whose status changed to "In Progress" this week (present in snapshot as Not Started or absent, now In Progress). If none, omit.
+
+## What I Completed
+Games whose status changed to "Completed" this week. Show: name, Final GVI, Personal Rating, GVI delta vs projGVI (format: +X.XXX or -X.XXX). If GVI delta is null, write "no projection on file". If none, omit.
+
+## What I Abandoned
+Games whose status changed to "Abandoned" this week. Show: name, hours played, Final GVI, and the notes field if it contains a reason. If none, omit.
+
+## Wishlist Changes
+New games added to the wishlist this week (in current but not in snapshot). If the game has a dekuLink or notes, summarize briefly. Games removed from the wishlist (in snapshot but not in current, and NOT in owned — i.e. not purchased). If no changes, omit.
+
+## Coming Up
+Two parts, written as a single short paragraph:
+1. What is currently active on each platform (In Progress games)
+2. The next 5 unstarted owned games by projected personal rating (proj rating descending, only games with a projRating). If fewer than 5 exist with projRating, list what's available.
+End with: "For the full force-ranked roadmap, run a monthly report."
+
+If the snapshot is missing (first run ever), generate the report based on current state only, treating everything as "this week". Note at the top: "No previous snapshot found — showing full current library state as baseline."`;
+const DEFAULT_MONTHLY_PROMPT = `You are generating a monthly gaming backlog planning guide. You will receive the player's full owned library and wishlist as JSON. Generate the complete report per the format specification below.
+
+=== PLAYER PREFERENCE PROFILE ===
+CORE IDENTITY: ISTJ — goal-oriented, completion-driven, efficiency-focused. 30+, experienced gamer since NES era.
+STRONG PREFERENCES: Systems-driven combat, momentum-based gameplay, strong early hooks, flexible playstyles, fair difficulty, strategic depth (buildcrafting), modern visuals, strong audio/7.1 surround, 40–70h sweet spot (20–90h acceptable, 100h+ fatigue risk).
+HARD DEALBREAKERS: Punitive stealth, execution-heavy difficulty, roguelike/start-over design, sandbox/crafting without narrative engine, heavy anime energy, juvenile tone (Nintendo cartoon + Beloved IP exceptions apply), caption-dense delivery, contrived modern-setting JRPG premises, bishōnen protagonists, dated mechanics, framerate issues.
+GENRE: High = Metroidvanias, Action-Adventures, Action RPGs, Soulslike (with builds). Medium = Turn-based RPGs (deep+adult tone), Tactical RPGs (system-driven), CRPGs. Low = Roguelikes (<20%), Execution Platformers (<30%), Sandbox (<20%).
+CALIBRATION: Arena shooter/empowerment DNA = always underweighted (DOOM 2016 +0.288 delta). Restriction-first/stealth = always overweighted. Enable accessibility immediately. Platform quality is a hard constraint (framerate, audio).
+
+=== GVI FORMULA ===
+Personal Rating = (Gameplay×0.35)+(Story×0.25)+(Art×0.20)+(MusicSound×0.15)+(Replay×0.05)
+Hours bands: 1-20h=0.80, 21-40h=0.90, 41-70h=1.00, 71-90h=0.90, 91h+=0.80
+Base GVI = (PersonalRating/10×0.50) + (band×0.25) + ((70-price)/69×0.25)
+Final GVI = Base GVI + (difficulty×0.01 if Completed, -difficulty×0.01 if Abandoned, +0 if In Progress)
+Purchase discipline line: 0.700. GVI overstated = very low price (<$8) inflates price component. GVI understated = runtime <20h scores lowest hours band.
+
+=== FORMAT SPECIFICATION ===
+Output Markdown only. 8 sections in order. Use \\$ for dollar signs. Never use ~. GVI to 3 decimal places. Label hours as "est Xh" (HLTB ×1.40). Do NOT recalculate GVI. Prose over bullets. Roman numerals → append Arabic: "Final Fantasy XVI (16)".
+SERIES LOCK: Identify all series. Validate no sequel appears earlier than its predecessor in Section 5. Fix violations silently.
+
+## Section 1 — Key Insights
+Paragraph form. Every observation drives an action.
+### In-Progress Assessment
+Total est remaining hours across all in-progress. Which to abandon (name, rating delta, remaining hours) — only if <75% complete AND >5h remaining. Overperformers and by how much. Unresolved platform decisions with consequential runtime.
+### GVI Formula — What It Measures and Where to Be Careful
+Every report: For completed/in-progress GVI is correct primary metric. For wishlist, projected personal rating is primary. GVI overstated = name each game <$8, show GVI + proj rating. GVI understated = runtime <20h, add 0.05–0.10 mentally, list by name.
+### Genre Calibration Signal
+Both signals every report: Arena shooter/momentum-rewarding = confirmed underweighted, bump projections. Restriction-first/stealth-adjacent = confirmed overweighted, carry abandonment risk flags.
+### Wishlist Data Quality
+Count missing projected personal ratings. State number and %. Name them. Flag as data quality problem. Call out high-GVI games in this group specifically.
+### Additional Insights
+1–3 sharp data-driven observations not obvious from raw numbers.
+
+## Section 2 — Current Play Recommendations
+1–2 games per platform. Balance high-commitment vs lighter. Paragraph form. PS5/PS4 slate now+next. Switch/Switch 2 slate now+next. Hold or assess with exact decision points. Respect series sequencing.
+
+## Section 3 — Suggested Actions
+Bullet list. Only categories with entries: Abandon immediately (name, rating delta, est remaining, completion% — only <75% AND >5h remaining), Finish or cut at next session, Buy now (price + reason), Platform decisions to resolve, Data gaps to fill.
+
+## Section 4 — Buying Guide — Wishlist Ranked by Projected Personal Rating
+Sort by proj rating descending. Top 10 table: Rank | Title | Proj Rating | GVI | Target \\$ | Notes (platform, key risk, sequencing dep, GVI flag — 1 sentence max). Continue from 11.: 11. Title — GVI X.XXX, \\$XX *(note)*. Mark "Below 0.700 GVI — opportunistic only:" transition. Then "No projected personal rating — ranked by GVI proxy only:" tier with disclaimer. Same 0.700 line within tier.
+
+## Section 5 — Play Next — Force Ranked Roadmap
+### Active Games Table
+Columns: # | Title | Platform | Status | Rating | Est Remaining | Priority Note. All in-progress. Rating = actual if available, else proj. No GVI column.
+### Next to Start — Numbered List
+Start at 11. Format: 11. Title — Platform, \\$XX, proj rating X.X *(note)*. Only games with proj personal rating, sorted descending. Predecessor notes what it unlocks.
+### Insufficient Data
+List every game missing proj personal rating. State what's missing. Do not rank by GVI.
+
+## Section 6 — Genre Analysis
+3–5 paragraphs. Completed library genre breakdown + avg ratings. Active/wishlist alignment. Genre mismatches. Preference evolution signal from recent completions.
+
+## Section 7 — Platform Trends
+Table: Platform | Owned | Completed | In Progress | Wishlist Targets
+2–4 paragraphs: completion rate by platform, shift over time (last 6 months = recent), wishlist vs owned targeting, forward implication vs platform strategy.
+
+## Section 8 — All-Time Personal Rating Leaderboard + Final Summary
+### All-Time Top 10 — numbered list, name + rating only
+### Recently Completed (Last 3 Months) — bullets, name + rating + all-time rank
+### Final Summary — 3–5 sentences: most important action now, highest-ceiling game on deck, one forward-looking observation`;
+
+// Helper: get active prompt from config or fall back to default
+function getPrompt(config, key, defaultPrompt){
+  if(!config) return null; // no config loaded — show unconfigured state
+  return config[key] || defaultPrompt;
+}
 
 // ─── PROJECTION MODAL ─────────────────────────────────────────────────────────
-function ProjectionModal({game, onSave, onClose}){
+function ProjectionModal({game, onSave, onClose, config}){
   const initPrice = game.targetPrice?.toString() || game.price?.toString() || "";
   const[atlPrice,setAtlPrice]=useState(initPrice);
   const[hltbHours,setHltbHours]=useState("");
@@ -757,7 +844,7 @@ Generate a FRESH projection based solely on the inputs above and the player prof
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",
           max_tokens:1000,
-          system:PROJECTION_SYSTEM_PROMPT,
+          system:getPrompt(config,"projection",DEFAULT_PROJECTION_PROMPT)||DEFAULT_PROJECTION_PROMPT,
           messages:[{role:"user",content:userMsg}]
         })
       });
@@ -1075,97 +1162,6 @@ function WishlistTable({items,onSelect,selected,sortKey,sortDir,onSortChange}){
 // ─── REPORT TAB ──────────────────────────────────────────────────────────────
 const SNAPSHOT_KEY="gvi-weekly-snapshot-v1";
 
-const MONTHLY_PROMPT=`You are generating a monthly gaming backlog planning guide. You will receive the player's full owned library and wishlist as JSON. Generate the complete report per the format specification below.
-
-=== PLAYER PREFERENCE PROFILE ===
-CORE IDENTITY: ISTJ — goal-oriented, completion-driven, efficiency-focused. 30+, experienced gamer since NES era.
-STRONG PREFERENCES: Systems-driven combat, momentum-based gameplay, strong early hooks, flexible playstyles, fair difficulty, strategic depth (buildcrafting), modern visuals, strong audio/7.1 surround, 40–70h sweet spot (20–90h acceptable, 100h+ fatigue risk).
-HARD DEALBREAKERS: Punitive stealth, execution-heavy difficulty, roguelike/start-over design, sandbox/crafting without narrative engine, heavy anime energy, juvenile tone (Nintendo cartoon + Beloved IP exceptions apply), caption-dense delivery, contrived modern-setting JRPG premises, bishōnen protagonists, dated mechanics, framerate issues.
-GENRE: High = Metroidvanias, Action-Adventures, Action RPGs, Soulslike (with builds). Medium = Turn-based RPGs (deep+adult tone), Tactical RPGs (system-driven), CRPGs. Low = Roguelikes (<20%), Execution Platformers (<30%), Sandbox (<20%).
-CALIBRATION: Arena shooter/empowerment DNA = always underweighted (DOOM 2016 +0.288 delta). Restriction-first/stealth = always overweighted. Enable accessibility immediately. Platform quality is a hard constraint (framerate, audio).
-
-=== GVI FORMULA ===
-Personal Rating = (Gameplay×0.35)+(Story×0.25)+(Art×0.20)+(MusicSound×0.15)+(Replay×0.05)
-Hours bands: 1-20h=0.80, 21-40h=0.90, 41-70h=1.00, 71-90h=0.90, 91h+=0.80
-Base GVI = (PersonalRating/10×0.50) + (band×0.25) + ((70-price)/69×0.25)
-Final GVI = Base GVI + (difficulty×0.01 if Completed, -difficulty×0.01 if Abandoned, +0 if In Progress)
-Purchase discipline line: 0.700. GVI overstated = very low price (<$8) inflates price component. GVI understated = runtime <20h scores lowest hours band.
-
-=== FORMAT SPECIFICATION ===
-Output Markdown only. 8 sections in order. Use \\$ for dollar signs. Never use ~. GVI to 3 decimal places. Label hours as "est Xh" (HLTB ×1.40). Do NOT recalculate GVI. Prose over bullets. Roman numerals → append Arabic: "Final Fantasy XVI (16)".
-SERIES LOCK: Identify all series. Validate no sequel appears earlier than its predecessor in Section 5. Fix violations silently.
-
-## Section 1 — Key Insights
-Paragraph form. Every observation drives an action.
-### In-Progress Assessment
-Total est remaining hours across all in-progress. Which to abandon (name, rating delta, remaining hours) — only if <75% complete AND >5h remaining. Overperformers and by how much. Unresolved platform decisions with consequential runtime.
-### GVI Formula — What It Measures and Where to Be Careful
-Every report: For completed/in-progress GVI is correct primary metric. For wishlist, projected personal rating is primary. GVI overstated = name each game <$8, show GVI + proj rating. GVI understated = runtime <20h, add 0.05–0.10 mentally, list by name.
-### Genre Calibration Signal
-Both signals every report: Arena shooter/momentum-rewarding = confirmed underweighted, bump projections. Restriction-first/stealth-adjacent = confirmed overweighted, carry abandonment risk flags.
-### Wishlist Data Quality
-Count missing projected personal ratings. State number and %. Name them. Flag as data quality problem. Call out high-GVI games in this group specifically.
-### Additional Insights
-1–3 sharp data-driven observations not obvious from raw numbers.
-
-## Section 2 — Current Play Recommendations
-1–2 games per platform. Balance high-commitment vs lighter. Paragraph form. PS5/PS4 slate now+next. Switch/Switch 2 slate now+next. Hold or assess with exact decision points. Respect series sequencing.
-
-## Section 3 — Suggested Actions
-Bullet list. Only categories with entries: Abandon immediately (name, rating delta, est remaining, completion% — only <75% AND >5h remaining), Finish or cut at next session, Buy now (price + reason), Platform decisions to resolve, Data gaps to fill.
-
-## Section 4 — Buying Guide — Wishlist Ranked by Projected Personal Rating
-Sort by proj rating descending. Top 10 table: Rank | Title | Proj Rating | GVI | Target \\$ | Notes (platform, key risk, sequencing dep, GVI flag — 1 sentence max). Continue from 11.: 11. Title — GVI X.XXX, \\$XX *(note)*. Mark "Below 0.700 GVI — opportunistic only:" transition. Then "No projected personal rating — ranked by GVI proxy only:" tier with disclaimer. Same 0.700 line within tier.
-
-## Section 5 — Play Next — Force Ranked Roadmap
-### Active Games Table
-Columns: # | Title | Platform | Status | Rating | Est Remaining | Priority Note. All in-progress. Rating = actual if available, else proj. No GVI column.
-### Next to Start — Numbered List
-Start at 11. Format: 11. Title — Platform, \\$XX, proj rating X.X *(note)*. Only games with proj personal rating, sorted descending. Predecessor notes what it unlocks.
-### Insufficient Data
-List every game missing proj personal rating. State what's missing. Do not rank by GVI.
-
-## Section 6 — Genre Analysis
-3–5 paragraphs. Completed library genre breakdown + avg ratings. Active/wishlist alignment. Genre mismatches. Preference evolution signal from recent completions.
-
-## Section 7 — Platform Trends
-Table: Platform | Owned | Completed | In Progress | Wishlist Targets
-2–4 paragraphs: completion rate by platform, shift over time (last 6 months = recent), wishlist vs owned targeting, forward implication vs platform strategy.
-
-## Section 8 — All-Time Personal Rating Leaderboard + Final Summary
-### All-Time Top 10 — numbered list, name + rating only
-### Recently Completed (Last 3 Months) — bullets, name + rating + all-time rank
-### Final Summary — 3–5 sentences: most important action now, highest-ceiling game on deck, one forward-looking observation`;
-
-const WEEKLY_PROMPT=`You are generating a weekly gaming activity report. You will receive the CURRENT library state and a SNAPSHOT from the last weekly report. Your job is to identify and narrate everything that changed between the snapshot and now.
-
-Output Markdown only. Use \\$ for dollar signs. GVI to 3 decimal places. Write each section as a brief narrative — not bullet dumps. If a section has nothing to report, omit it entirely. Use Roman numeral → Arabic format: "Final Fantasy XVI (16)".
-
-## What I Played
-For each In Progress game where hoursPlayed increased since the snapshot: name, hours last week → hours this week, delta (+Xh), and percent complete (hoursPlayed / estHours × 100, shown as X%). If estHours is null, omit the percent. Only show In Progress games — not Completed or Not Started. If no hours changed, omit this section.
-
-## What I Bought
-Games that exist in current owned but did NOT exist in the snapshot owned list (i.e. newly purchased this week — moved from wishlist or added fresh). Show: name, price paid, platform. If nothing new, omit.
-
-## What I Started
-Games whose status changed to "In Progress" this week (present in snapshot as Not Started or absent, now In Progress). If none, omit.
-
-## What I Completed
-Games whose status changed to "Completed" this week. Show: name, Final GVI, Personal Rating, GVI delta vs projGVI (format: +X.XXX or -X.XXX). If GVI delta is null, write "no projection on file". If none, omit.
-
-## What I Abandoned
-Games whose status changed to "Abandoned" this week. Show: name, hours played, Final GVI, and the notes field if it contains a reason. If none, omit.
-
-## Wishlist Changes
-New games added to the wishlist this week (in current but not in snapshot). If the game has a dekuLink or notes, summarize briefly. Games removed from the wishlist (in snapshot but not in current, and NOT in owned — i.e. not purchased). If no changes, omit.
-
-## Coming Up
-Two parts, written as a single short paragraph:
-1. What is currently active on each platform (In Progress games)
-2. The next 5 unstarted owned games by projected personal rating (proj rating descending, only games with a projRating). If fewer than 5 exist with projRating, list what's available.
-End with: "For the full force-ranked roadmap, run a monthly report."
-
-If the snapshot is missing (first run ever), generate the report based on current state only, treating everything as "this week". Note at the top: "No previous snapshot found — showing full current library state as baseline."`;
 
 function renderMd(text){
   const lines=text.split("\n");const els=[];let i=0;
@@ -1216,109 +1212,216 @@ function inlineFmt(t){
 
 const REPORT_CACHE_KEY="gvi-report-cache-v1";
 
-function ReportTab({owned,wishlist}){
-  const[mode,setMode]=useState("weekly");
-  const[status,setStatus]=useState("idle");
-  const[reports,setReports]=useState({weekly:"",monthly:""});
-  const[reportDates,setReportDates]=useState({weekly:null,monthly:null});
+// ─── ADD REPORT MODAL ────────────────────────────────────────────────────────
+function AddReportModal({existingIds, onSave, onClose}){
+  const[name,setName]=useState("");
+  const[prompt,setPrompt]=useState("");
+  const FF="'Inter',sans-serif";
+  const FM="'JetBrains Mono',monospace";
+  function save(){
+    if(!name.trim()||!prompt.trim()) return;
+    const id="custom-"+Date.now();
+    onSave({id,name:name.trim(),prompt:prompt.trim()});
+    onClose();
+  }
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(6,14,30,0.92)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:"#0a1628",border:"1px solid #7c3aed44",borderRadius:6,padding:24,width:"100%",maxWidth:640,maxHeight:"90vh",overflowY:"auto",animation:"fadeIn 0.2s ease"}}>
+        <div style={{fontSize:9,letterSpacing:3,color:"#a78bfa",marginBottom:12}}>ADD REPORT</div>
+        <div style={{marginBottom:14}}>
+          <Lbl>REPORT NAME</Lbl>
+          <Inp value={name} onChange={setName} placeholder="e.g. Quarterly Deep Dive"/>
+        </div>
+        <div style={{marginBottom:20}}>
+          <Lbl>SYSTEM PROMPT</Lbl>
+          <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} rows={12} placeholder="You are generating a report for a gaming library tracker. You will receive the player's full owned library and wishlist as JSON..."
+            style={{width:"100%",boxSizing:"border-box",background:"#060e1e",border:"1px solid #334155",borderRadius:3,padding:"8px 10px",color:"#e2e8f0",fontFamily:FM,fontSize:11,lineHeight:1.6,resize:"vertical",outline:"none",marginTop:4}}/>
+          <div style={{fontSize:9,color:"#475569",marginTop:4,fontFamily:FM}}>The full library JSON will be appended to your prompt automatically.</div>
+        </div>
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+          <Btn variant="ghost" onClick={onClose}>CANCEL</Btn>
+          <Btn variant="primary" onClick={save} disabled={!name.trim()||!prompt.trim()}>ADD REPORT</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── EDIT PROMPTS MODAL ──────────────────────────────────────────────────────
+function EditPromptsModal({config, defaultProjection, onSave, onClose}){
+  const[projPrompt,setProjPrompt]=useState(config?.projection||defaultProjection||"");
+  const[reports,setReports]=useState(config?.reports||[]);
+  const[editingIdx,setEditingIdx]=useState(null);
+  const[editName,setEditName]=useState("");
+  const[editPrompt,setEditPrompt]=useState("");
+  const FM="'JetBrains Mono',monospace";
+
+  function startEdit(i){
+    setEditingIdx(i);
+    setEditName(reports[i].name);
+    setEditPrompt(reports[i].prompt);
+  }
+  function saveEdit(){
+    const updated=[...reports];
+    updated[editingIdx]={...updated[editingIdx],name:editName,prompt:editPrompt};
+    setReports(updated);
+    setEditingIdx(null);
+  }
+  function deleteReport(i){
+    setReports(reports.filter((_,idx)=>idx!==i));
+    if(editingIdx===i) setEditingIdx(null);
+  }
+  function save(){
+    onSave({...config, projection:projPrompt, reports});
+  }
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(6,14,30,0.92)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:"#0a1628",border:"1px solid #7c3aed44",borderRadius:6,padding:24,width:"100%",maxWidth:700,maxHeight:"92vh",overflowY:"auto",animation:"fadeIn 0.2s ease"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+          <div style={{fontSize:9,letterSpacing:3,color:"#a78bfa"}}>EDIT PROMPTS</div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:20}}>×</button>
+        </div>
+
+        {/* Projection prompt */}
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:9,letterSpacing:1.5,color:"#94a3b8",marginBottom:6,fontFamily:FM}}>PROJECTION SYSTEM PROMPT</div>
+          <textarea value={projPrompt} onChange={e=>setProjPrompt(e.target.value)} rows={10}
+            style={{width:"100%",boxSizing:"border-box",background:"#060e1e",border:"1px solid #334155",borderRadius:3,padding:"8px 10px",color:"#e2e8f0",fontFamily:FM,fontSize:10,lineHeight:1.6,resize:"vertical",outline:"none"}}/>
+        </div>
+
+        {/* Report prompts */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:9,letterSpacing:1.5,color:"#94a3b8",marginBottom:8,fontFamily:FM}}>REPORT PROMPTS ({reports.length})</div>
+          {reports.map((r,i)=>(
+            <div key={r.id} style={{marginBottom:8,background:"#060e1e",border:"1px solid #1e293b",borderRadius:3,padding:"10px 12px"}}>
+              {editingIdx===i?(
+                <>
+                  <div style={{marginBottom:8}}><Inp value={editName} onChange={setEditName} placeholder="Report name"/></div>
+                  <textarea value={editPrompt} onChange={e=>setEditPrompt(e.target.value)} rows={8}
+                    style={{width:"100%",boxSizing:"border-box",background:"#0a1628",border:"1px solid #334155",borderRadius:3,padding:"8px 10px",color:"#e2e8f0",fontFamily:FM,fontSize:10,lineHeight:1.6,resize:"vertical",outline:"none",marginBottom:8}}/>
+                  <div style={{display:"flex",gap:6}}>
+                    <Btn size="sm" variant="success" onClick={saveEdit}>SAVE</Btn>
+                    <Btn size="sm" variant="ghost" onClick={()=>setEditingIdx(null)}>CANCEL</Btn>
+                  </div>
+                </>
+              ):(
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:11,color:"#e2e8f0",fontFamily:"'Inter',sans-serif"}}>{r.name}</div>
+                  <div style={{display:"flex",gap:6}}>
+                    <Btn size="sm" variant="ghost" onClick={()=>startEdit(i)}>✎ EDIT</Btn>
+                    <Btn size="sm" variant="ghost" onClick={()=>deleteReport(i)}>✕</Btn>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+          <Btn variant="ghost" onClick={onClose}>CANCEL</Btn>
+          <Btn variant="success" onClick={save}>SAVE TO GIST</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── REPORT TAB ──────────────────────────────────────────────────────────────
+function ReportTab({owned,wishlist,config,onSaveConfig}){
+  const reports = config?.reports || [];
+  const[activeId,setActiveId]=useState(null);
+  const[reportCache,setReportCache]=useState({}); // id -> {text, date}
+  const[status,setStatus]=useState("idle"); // idle | generating | done
   const[error,setError]=useState("");
   const[snapshot,setSnapshot]=useState(null);
   const[snapshotLoaded,setSnapshotLoaded]=useState(false);
+  const[addModal,setAddModal]=useState(false);
+  const[editModal,setEditModal]=useState(false);
+
+  const activeReport = reports.find(r=>r.id===activeId);
+  const cached = activeId ? reportCache[activeId] : null;
 
   // Load snapshot + cached reports on mount
   useEffect(()=>{
     (async()=>{
       try{
-        const[sr,cr]=await Promise.all([
-          (()=>{ try{ const v=localStorage.getItem(SNAPSHOT_KEY); return v?{value:v}:null; }catch{ return null; } })(),
-          (()=>{ try{ const v=localStorage.getItem(REPORT_CACHE_KEY); return v?{value:v}:null; }catch{ return null; } })(),
-        ]);
-        if(sr) setSnapshot(JSON.parse(sr.value));
-        if(cr){
-          const cache=JSON.parse(cr.value);
-          setReports({weekly:cache.weekly||"",monthly:cache.monthly||""});
-          setReportDates({weekly:cache.weeklyDate||null,monthly:cache.monthlyDate||null});
-          if(cache.weekly||cache.monthly) setStatus("done");
+        const sv = localStorage.getItem(SNAPSHOT_KEY);
+        if(sv) setSnapshot(JSON.parse(sv));
+        const cv = localStorage.getItem(REPORT_CACHE_KEY);
+        if(cv){
+          const c=JSON.parse(cv);
+          setReportCache(c);
         }
       }catch{}
       setSnapshotLoaded(true);
     })();
   },[]);
 
-  function switchMode(m){
-    setMode(m);
-    setError("");
-    // Don't clear report — restore cached state for that mode
-    setStatus(reports[m]?"done":"idle");
-  }
+  // Set default active report when config loads
+  useEffect(()=>{
+    if(reports.length>0 && !activeId) setActiveId(reports[0].id);
+  },[config]);
 
-  async function saveCache(newReports,newDates){
-    try{ localStorage.setItem(REPORT_CACHE_KEY,JSON.stringify({
-      weekly:newReports.weekly,monthly:newReports.monthly,
-      weeklyDate:newDates.weekly,monthlyDate:newDates.monthly,
-    })); }catch{}
+  async function saveCache(id, text, date){
+    try{
+      const current = JSON.parse(localStorage.getItem(REPORT_CACHE_KEY)||"{}");
+      current[id]={text,date};
+      localStorage.setItem(REPORT_CACHE_KEY, JSON.stringify(current));
+    }catch{}
   }
 
   async function generate(){
-    setStatus("generating");setError("");
+    if(!activeReport) return;
+    setStatus("generating"); setError("");
     try{
-      let userMessage,systemPrompt,useSearch=false;
       const today=new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+      const isWeekly = activeReport.id==="weekly";
+      const isMonthly = activeReport.id==="monthly";
 
-      if(mode==="monthly"){
-        systemPrompt=MONTHLY_PROMPT;useSearch=true;
-        userMessage=`Generate the full monthly backlog planning guide. Today: ${today}.
+      let userMessage = `Generate the report. Today: ${today}.\n\nOWNED LIBRARY (${owned.length} games):\n${JSON.stringify(owned,null,1)}\n\nWISHLIST (${wishlist.length} items):\n${JSON.stringify(wishlist,null,1)}`;
 
-OWNED LIBRARY (${owned.length} games):
-${JSON.stringify(owned,null,1)}
-
-WISHLIST (${wishlist.length} items):
-${JSON.stringify(wishlist,null,1)}
-
-Generate the complete 8-section report now. Use web search to validate series release orders for series lock validation before writing Section 5.`;
-      } else {
-        systemPrompt=WEEKLY_PROMPT;useSearch=false;
-        userMessage=`Generate the weekly activity report. Today: ${today}.
-
-CURRENT OWNED (${owned.length} games):
-${JSON.stringify(owned,null,1)}
-
-CURRENT WISHLIST (${wishlist.length} items):
-${JSON.stringify(wishlist,null,1)}
-
-SNAPSHOT FROM LAST WEEKLY REPORT (${snapshot?`saved ${new Date(snapshot.savedAt).toLocaleDateString()}`:"no snapshot — first run"}):
-${snapshot?`SNAPSHOT OWNED (${snapshot.owned.length} games):\n${JSON.stringify(snapshot.owned,null,1)}\n\nSNAPSHOT WISHLIST (${snapshot.wishlist.length} items):\n${JSON.stringify(snapshot.wishlist,null,1)}`:"NO SNAPSHOT FOUND"}
-
-Generate the weekly report now, diffing current state against the snapshot.`;
+      if(isWeekly && snapshot){
+        userMessage += `\n\nSNAPSHOT FROM LAST WEEKLY REPORT (saved ${new Date(snapshot.savedAt).toLocaleDateString()}):\nSNAPSHOT OWNED (${snapshot.owned.length} games):\n${JSON.stringify(snapshot.owned,null,1)}\n\nSNAPSHOT WISHLIST (${snapshot.wishlist.length} items):\n${JSON.stringify(snapshot.wishlist,null,1)}`;
+      } else if(isWeekly){
+        userMessage += `\n\nSNAPSHOT: NO SNAPSHOT FOUND — first run, treat current library as baseline.`;
       }
 
-      const body={model:"claude-sonnet-4-20250514",max_tokens:mode==="monthly"?16000:4000,system:systemPrompt,messages:[{role:"user",content:userMessage}]};
-      if(useSearch) body.tools=[{type:"web_search_20250305",name:"web_search"}];
+      const body={
+        model:"claude-sonnet-4-20250514",
+        max_tokens: isMonthly ? 16000 : 4000,
+        system: activeReport.prompt,
+        messages:[{role:"user",content:userMessage}]
+      };
+      if(isMonthly) body.tools=[{type:"web_search_20250305",name:"web_search"}];
 
-      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":lsGet(LS_ANTHROPIC_KEY)||"","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(body)});
+      const resp=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":lsGet(LS_ANTHROPIC_KEY)||"","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify(body)
+      });
       if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`API error ${resp.status}`);}
       const data=await resp.json();
       const text=data.content.filter(b=>b.type==="text").map(b=>b.text).join("\n");
       const now=new Date().toISOString();
 
-      const newReports={...reports,[mode]:text};
-      const newDates={...reportDates,[mode]:now};
-      setReports(newReports);setReportDates(newDates);setStatus("done");
-      await saveCache(newReports,newDates);
+      const newCache={...reportCache,[activeId]:{text,date:now}};
+      setReportCache(newCache);
+      setStatus("done");
+      await saveCache(activeId, text, now);
 
-      if(mode==="weekly"){
+      if(isWeekly){
         const newSnap={owned,wishlist,savedAt:now};
         try{ localStorage.setItem(SNAPSHOT_KEY,JSON.stringify(newSnap)); }catch{};
         setSnapshot(newSnap);
       }
-    }catch(e){setError(e.message);setStatus("done");} // keep done so cached report stays visible
+    }catch(e){setError(e.message);setStatus("done");}
   }
 
   function saveMarkdown(){
-    const text=reports[mode];
-    if(!text) return;
+    const text=cached?.text; if(!text) return;
     const d=new Date().toISOString().slice(0,10);
-    const filename=`gvi-${mode}-report-${d}.md`;
+    const filename=`gvi-${activeReport?.name?.toLowerCase().replace(/\s+/g,"-")||"report"}-${d}.md`;
     const blob=new Blob([text],{type:"text/markdown"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
@@ -1326,92 +1429,102 @@ Generate the weekly report now, diffing current state against the snapshot.`;
     URL.revokeObjectURL(url);
   }
 
-  function copyMarkdown(){navigator.clipboard?.writeText(reports[mode]);}
+  function copyMarkdown(){navigator.clipboard?.writeText(cached?.text||"");}
+
+  function handleAddReport(newReport){
+    const newReports=[...(config?.reports||[]),newReport];
+    const newConfig={...config,reports:newReports};
+    onSaveConfig(newConfig);
+    setActiveId(newReport.id);
+  }
+
+  function handleSavePrompts(newConfig){
+    onSaveConfig(newConfig);
+    setEditModal(false);
+  }
 
   const isGenerating=status==="generating";
-  const currentReport=reports[mode];
-  const currentDate=reportDates[mode];
-  const snapshotLabel=snapshot
-    ?`snapshot: ${new Date(snapshot.savedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"})}`
-    :"no snapshot yet";
+  const snapshotLabel=snapshot?`snapshot: ${new Date(snapshot.savedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:"no snapshot yet";
+
+  if(!config){
+    return(
+      <div style={{textAlign:"center",padding:"60px 20px",border:"1px dashed #1e293b",borderRadius:4}}>
+        <div style={{fontSize:22,marginBottom:10}}>⚙</div>
+        <div style={{fontSize:13,color:"#94a3b8",fontFamily:"'Inter',sans-serif",marginBottom:8}}>Prompts not configured</div>
+        <div style={{fontSize:11,color:"#475569",fontFamily:"'Inter',sans-serif",lineHeight:1.6,marginBottom:16}}>Pull config from Gist or use the prompts editor to set up your reports.</div>
+      </div>
+    );
+  }
 
   return(
     <div>
-      {/* Controls row */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:12,flexWrap:"wrap"}}>
+      {addModal && <AddReportModal existingIds={reports.map(r=>r.id)} onSave={handleAddReport} onClose={()=>setAddModal(false)}/>}
+      {editModal && <EditPromptsModal config={config} defaultProjection={DEFAULT_PROJECTION_PROMPT} onSave={handleSavePrompts} onClose={()=>setEditModal(false)}/>}
 
-        {/* Mode toggle */}
-        <div style={{display:"flex",background:"#0a1628",border:"1px solid #1e293b",borderRadius:4,padding:3,gap:2}}>
-          {[["weekly","Weekly"],["monthly","Monthly"]].map(([key,label])=>(
-            <button key={key} onClick={()=>switchMode(key)} disabled={isGenerating} style={{
-              padding:"5px 18px",border:"none",borderRadius:3,cursor:isGenerating?"not-allowed":"pointer",
-              fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:11,letterSpacing:0.3,transition:"all 0.15s",
-              background:mode===key?"#1e293b":"transparent",
-              color:mode===key?"#a78bfa":"#64748b",
-            }}>{label}</button>
+      {/* Report selector + actions row */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,gap:8,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+          {reports.map(r=>(
+            <button key={r.id} onClick={()=>{setActiveId(r.id);setStatus(reportCache[r.id]?"done":"idle");setError("");}} disabled={isGenerating}
+              style={{padding:"5px 14px",border:"none",borderRadius:3,cursor:isGenerating?"not-allowed":"pointer",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:11,letterSpacing:0.3,transition:"all 0.15s",
+                background:activeId===r.id?"#1e293b":"transparent",color:activeId===r.id?"#a78bfa":"#64748b"}}>
+              {r.name}
+            </button>
           ))}
+          <Btn variant="ghost" size="sm" onClick={()=>setAddModal(true)}>＋ ADD REPORT</Btn>
+          <Btn variant="ghost" size="sm" onClick={()=>setEditModal(true)}>✎ EDIT PROMPTS</Btn>
         </div>
-
-        {/* Meta + actions */}
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-          {/* Report date or snapshot label */}
-          <span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:"#94a3b8"}}>
-            {currentDate
-              ? `generated ${new Date(currentDate).toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}`
-              : mode==="weekly" ? snapshotLabel : `${owned.length} owned · ${wishlist.length} wishlist`}
-          </span>
-          {currentReport&&<>
-            <Btn variant="ghost" size="sm" onClick={copyMarkdown}>Copy</Btn>
-            <Btn variant="ghost" size="sm" onClick={saveMarkdown}>⬇ Save .md</Btn>
-          </>}
-          <Btn variant={currentReport?"ghost":"primary"} size="sm" onClick={generate} disabled={isGenerating}>
-            {isGenerating?"Generating...":`${currentReport?"↺ Re-run":"▶ Generate"} ${mode==="weekly"?"Weekly":"Monthly"}`}
-          </Btn>
+          {cached?.date&&<span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:"#94a3b8"}}>generated {new Date(cached.date).toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</span>}
+          {activeReport?.id==="weekly"&&!cached?.date&&snapshotLoaded&&<span style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:"#64748b"}}>{snapshotLabel}</span>}
+          {cached?.text&&<><Btn variant="ghost" size="sm" onClick={copyMarkdown}>Copy</Btn><Btn variant="ghost" size="sm" onClick={saveMarkdown}>⬇ .md</Btn></>}
+          {activeReport&&<Btn variant={cached?.text?"ghost":"primary"} size="sm" onClick={generate} disabled={isGenerating||!activeReport}>
+            {isGenerating?"Generating...":`${cached?.text?"↺ Re-run":"▶ Generate"} ${activeReport?.name}`}
+          </Btn>}
         </div>
       </div>
 
-      {/* Generating indicator */}
       {isGenerating&&(
-        <div style={{padding:"10px 14px",background:"rgba(124,58,237,0.06)",border:"1px solid #7c3aed33",borderRadius:3,fontSize:11,fontFamily:"'Inter',sans-serif",color:"#a78bfa",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+        <div style={{padding:"10px 14px",background:"rgba(124,58,237,0.06)",border:"1px solid #7c3aed33",borderRadius:3,fontSize:11,color:"#a78bfa",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:6,height:6,borderRadius:"50%",background:"#7c3aed",animation:"pulse 1s infinite"}}/>
-          {mode==="monthly"?"Generating monthly report — ~90 seconds, do not navigate away...":"Generating weekly report — ~15 seconds..."}
+          Generating {activeReport?.name} — please wait...
         </div>
       )}
 
-      {/* Error */}
-      {error&&<div style={{padding:"10px 14px",background:"rgba(248,113,113,0.08)",border:"1px solid #f8717144",borderRadius:3,fontSize:11,fontFamily:"'Inter',sans-serif",color:"#f87171",marginBottom:14}}>⚠ {error}</div>}
+      {error&&<div style={{padding:"10px 14px",background:"rgba(248,113,113,0.08)",border:"1px solid #f8717144",borderRadius:3,fontSize:11,color:"#f87171",marginBottom:14}}>⚠ {error}</div>}
 
-      {/* Weekly first-run notice */}
-      {mode==="weekly"&&!snapshot&&snapshotLoaded&&!currentReport&&!isGenerating&&(
-        <div style={{padding:"10px 14px",background:"rgba(250,204,21,0.05)",border:"1px solid #facc1533",borderRadius:3,fontSize:11,fontFamily:"'Inter',sans-serif",color:"#facc15",marginBottom:14,lineHeight:1.6}}>
-          No previous snapshot found. First run treats the current library as the baseline and saves a snapshot for next week.
+      {activeReport?.id==="weekly"&&!snapshot&&snapshotLoaded&&!cached?.text&&!isGenerating&&(
+        <div style={{padding:"10px 14px",background:"rgba(250,204,21,0.05)",border:"1px solid #facc1533",borderRadius:3,fontSize:11,color:"#facc15",marginBottom:14,lineHeight:1.6}}>
+          No previous snapshot. First run saves a baseline for next week's diff.
         </div>
       )}
 
-      {/* Idle placeholder */}
-      {!currentReport&&!isGenerating&&(
+      {!activeReport&&reports.length===0&&(
         <div style={{textAlign:"center",padding:"48px 20px",border:"1px dashed #1e293b",borderRadius:4}}>
-          <div style={{fontSize:22,marginBottom:10}}>{mode==="weekly"?"📅":"📋"}</div>
-          <div style={{fontSize:13,fontFamily:"'Inter',sans-serif",fontWeight:500,color:"#94a3b8",marginBottom:4}}>
-            {mode==="weekly"?"Weekly Report":"Monthly Report"}
-          </div>
-          <div style={{fontSize:11,fontFamily:"'Inter',sans-serif",color:"#334155",lineHeight:1.6}}>
-            {mode==="weekly"
-              ?"Diffs current state against last snapshot · saves new snapshot after each run · ~15 seconds"
-              :"Full 8-section backlog planning guide · series lock validated · ~90 seconds"}
-          </div>
+          <div style={{fontSize:22,marginBottom:10}}>📋</div>
+          <div style={{fontSize:13,color:"#94a3b8",fontFamily:"'Inter',sans-serif",marginBottom:4}}>No reports yet</div>
+          <div style={{fontSize:11,color:"#475569",fontFamily:"'Inter',sans-serif"}}>Click ＋ ADD REPORT to create your first report.</div>
         </div>
       )}
 
-      {/* Report output */}
-      {currentReport&&(
+      {activeReport&&!cached?.text&&!isGenerating&&(
+        <div style={{textAlign:"center",padding:"48px 20px",border:"1px dashed #1e293b",borderRadius:4}}>
+          <div style={{fontSize:22,marginBottom:10}}>📋</div>
+          <div style={{fontSize:13,color:"#94a3b8",fontFamily:"'Inter',sans-serif",marginBottom:4}}>{activeReport.name}</div>
+          <div style={{fontSize:11,color:"#475569",fontFamily:"'Inter',sans-serif",lineHeight:1.6}}>Click ▶ Generate to run this report.</div>
+        </div>
+      )}
+
+      {cached?.text&&(
         <div style={{background:"#060e1e",border:"1px solid #1e293b",borderRadius:4,padding:"24px 28px",maxHeight:"72vh",overflowY:"auto"}}>
-          {renderMd(currentReport)}
+          {renderMd(cached.text)}
         </div>
       )}
     </div>
   );
 }
+
+
 
 // ─── BATCH PROJ RATING MODAL ─────────────────────────────────────────────────
 function BatchRatingModal({owned,onSave,onClose}){
@@ -2030,7 +2143,7 @@ function DataModal({owned,wishlist,onImport,onClose}){
                 <div style={{fontSize:11,color:"#f87171",marginBottom:16,letterSpacing:1}}>ARE YOU ABSOLUTELY SURE?</div>
                 <div style={{display:"flex",gap:10,justifyContent:"center"}}>
                   <Btn variant="ghost" onClick={()=>{setResetDone(false);setResetConfirm("");}}>CANCEL</Btn>
-                  <Btn variant="danger" onClick={()=>onImport(OWNED_SEED,WISHLIST_SEED)}>YES — WIPE EVERYTHING</Btn>
+                  <Btn variant="danger" onClick={()=>onImport([],[])}>YES — WIPE EVERYTHING</Btn>
                 </div>
               </div>
             )}
@@ -2048,6 +2161,11 @@ const GIST_ID = "4c0053356a06460c57e3e54dd83b4f2b";
 const GIST_FILENAME = "gvi-library.json";
 const GIST_RAW = `https://gist.githubusercontent.com/MrWorldly/${GIST_ID}/raw/${GIST_FILENAME}`;
 const GIST_API = `https://api.github.com/gists/${GIST_ID}`;
+const CONFIG_GIST_ID = "1aa50497c83c2bc837e7288bcb259121";
+const CONFIG_FILENAME = "prompts.json";
+const CONFIG_GIST_RAW = `https://gist.githubusercontent.com/MrWorldly/${CONFIG_GIST_ID}/raw/${CONFIG_FILENAME}`;
+const CONFIG_GIST_API = `https://api.github.com/gists/${CONFIG_GIST_ID}`;
+const LS_CONFIG_KEY = "gvi-config-v1";
 // (LS_GIST_TOKEN, LS_ANTHROPIC_KEY, lsGet, lsSet, lsDel defined at top of file)
 
 async function fetchFromGist(){
@@ -2072,6 +2190,30 @@ async function pushToGist(token, owned, wishlist){
     const e = await r.json().catch(()=>({}));
     throw new Error(`GitHub ${r.status}: ${e.message || r.statusText}`);
   }
+}
+
+async function fetchFromConfigGist(){
+  const r = await fetch(`${CONFIG_GIST_RAW}?cb=${Date.now()}`);
+  if(!r.ok) throw new Error(`Config Gist fetch failed: ${r.status}`);
+  const text = await r.text();
+  try{ return JSON.parse(text); }catch{ return {}; }
+}
+
+async function pushToConfigGist(token, config){
+  const r = await fetch(CONFIG_GIST_API, {
+    method: "PATCH",
+    headers: { "Authorization": `token ${token}`, "Content-Type": "application/json", "Accept": "application/vnd.github.v3+json" },
+    body: JSON.stringify({ files: { [CONFIG_FILENAME]: { content: JSON.stringify(config, null, 2) } } }),
+  });
+  if(!r.ok){ const e = await r.json().catch(()=>({})); throw new Error(`GitHub ${r.status}: ${e.message || r.statusText}`); }
+}
+
+function saveLocalConfig(config){
+  lsSet(LS_CONFIG_KEY, JSON.stringify(config));
+}
+
+function loadLocalConfig(){
+  try{ const v = lsGet(LS_CONFIG_KEY); return v ? JSON.parse(v) : null; }catch{ return null; }
 }
 
 function saveLocal(owned, wishlist){
@@ -2107,6 +2249,21 @@ function SetupScreen({ onComplete }){
       if(!r.ok){ const e = await r.json().catch(()=>({})); throw new Error(e.message || r.status); }
       lsSet(LS_GIST_TOKEN, gt.trim());
       lsSet(LS_ANTHROPIC_KEY, ak.trim());
+      // Initialize config Gist with default prompts if empty
+      try{
+        const existing = await fetchFromConfigGist().catch(()=>({}));
+        if(!existing || Object.keys(existing).length===0){
+          const defaultConfig = {
+            projection: DEFAULT_PROJECTION_PROMPT,
+            reports: [
+              {id:"weekly", name:"Weekly Report", prompt: DEFAULT_WEEKLY_PROMPT},
+              {id:"monthly", name:"Monthly Backlog Guide", prompt: DEFAULT_MONTHLY_PROMPT},
+            ]
+          };
+          await pushToConfigGist(gt.trim(), defaultConfig);
+          saveLocalConfig(defaultConfig);
+        }
+      }catch(e){ console.warn("Config init failed:", e.message); }
       onComplete();
     }catch(e){ setErr("Failed: " + e.message); }
     finally{ setBusy(false); }
@@ -2170,6 +2327,8 @@ function App(){
   const [batchRatingModal, setBatchRatingModal] = useState(false);
   const [autoTagModal, setAutoTagModal] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const [config, setConfig] = useState(null); // {projection, reports:[{id,name,prompt}]}
+  const [configModal, setConfigModal] = useState(false);
 
   const showToast = (msg, type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null), 4000); };
 
@@ -2183,11 +2342,23 @@ function App(){
   async function boot(){
     setLoading(true);
     try{
-      const { owned: o, wishlist: w } = await fetchFromGist();
+      const [libData, cfgData] = await Promise.all([
+        fetchFromGist(),
+        fetchFromConfigGist().catch(()=>null),
+      ]);
+      const { owned: o, wishlist: w } = libData;
       setOwned(o); setWishlist(w);
       setLastSynced(new Date().toISOString());
       setSyncStatus("idle");
       saveLocal(o, w);
+      if(cfgData && Object.keys(cfgData).length > 0){
+        setConfig(cfgData);
+        saveLocalConfig(cfgData);
+      } else {
+        // Config Gist is empty — use local cache or null
+        const localCfg = loadLocalConfig();
+        if(localCfg) setConfig(localCfg);
+      }
       showToast(`Synced — ${o.length} owned · ${w.length} wishlist`, "success");
     }catch{
       const c = loadLocal();
@@ -2195,14 +2366,29 @@ function App(){
         setOwned(c.owned); setWishlist(c.wishlist);
         setLastSynced(c.lastSaved);
         setSyncStatus("offline");
+        const localCfg = loadLocalConfig();
+        if(localCfg) setConfig(localCfg);
         showToast("Gist unreachable — local cache loaded", "warn");
       }else{
-        setOwned(OWNED_SEED); setWishlist(WISHLIST_SEED);
+        setOwned([]); setWishlist([]);
         setSyncStatus("offline");
-        showToast("No cache — seed data loaded", "warn");
+        showToast("No cache available", "warn");
       }
     }finally{ setLoading(false); }
   }
+
+  const saveConfig = async (newConfig) => {
+    const token = lsGet(LS_GIST_TOKEN);
+    if(!token){ showToast("No token — config not saved to Gist", "error"); return; }
+    try{
+      await pushToConfigGist(token, newConfig);
+      setConfig(newConfig);
+      saveLocalConfig(newConfig);
+      showToast("Prompts saved to Gist", "success");
+    }catch(e){
+      showToast("Failed to save prompts: " + e.message, "error");
+    }
+  };
 
   const saveQueue = useRef(Promise.resolve());
   const doSave = useCallback((o, w, silent=false) => {
@@ -2391,6 +2577,7 @@ function App(){
               <div>SYNCED {new Date(lastSynced).toLocaleTimeString()}</div>
             </div>
           )}
+          <Btn variant="ghost" size="sm" onClick={()=>setConfigModal(true)}>⚙ PROMPTS</Btn>
           <Btn variant="ghost" size="sm" onClick={handlePull} disabled={syncStatus==="saving"}>⟳ PULL</Btn>
           <Btn variant="warn" size="sm" onClick={()=>setDataModal(true)}>⇓ BACKUP</Btn>
           <div onClick={handleDisconnect} title="Click to disconnect" style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 10px", border:`1px solid ${si.c}44`, borderRadius:3, fontSize:9, color:si.c, cursor:"pointer" }}>
@@ -2468,7 +2655,7 @@ function App(){
           </>
         )}
 
-        {tab==="report" && <ReportTab owned={owned} wishlist={wishlist}/>}
+        {tab==="report" && <ReportTab owned={owned} wishlist={wishlist} config={config} onSaveConfig={saveConfig}/>}
         {tab==="insights" && <InsightsTab owned={owned} wishlist={wishlist}/>}
 
         <div style={{ marginTop:14, padding:"8px 12px", background:"#0a1628", border:"1px solid #1e293b", borderRadius:4, fontSize:9, letterSpacing:1, display:"flex", gap:20, flexWrap:"wrap", alignItems:"center" }}>
@@ -2482,7 +2669,7 @@ function App(){
       {startedModal && <StartedModal game={startedModal} onSave={handleStarted} onClose={()=>setStartedModal(null)}/>}
       {addWishModal && <AddWishlistModal existingTitles={wishlist.map(w=>w.title)} onSave={handleAddWish} onClose={()=>setAddWishModal(false)}/>}
       {dekuModal && <DekuSyncModal currentWishlist={wishlist} onSync={handleDekuSync} onClose={()=>setDekuModal(false)}/>}
-      {projectionModal && <ProjectionModal game={projectionModal.game} onSave={projectionModal.source==="owned"?handleOwnedProjectionSave:handleProjectionSave} onClose={()=>setProjectionModal(null)}/>}
+      {projectionModal && <ProjectionModal game={projectionModal.game} onSave={projectionModal.source==="owned"?handleOwnedProjectionSave:handleProjectionSave} onClose={()=>setProjectionModal(null)} config={config}/>}
       {autoTagModal && <AutoTagModal owned={owned} wishlist={wishlist} onSave={handleAutoTag} onClose={()=>setAutoTagModal(false)}/>}
       {batchRatingModal && <BatchRatingModal owned={owned} onSave={handleBatchRating} onClose={()=>setBatchRatingModal(false)}/>}
       {dataModal && <DataModal owned={owned} wishlist={wishlist} onImport={handleImport} onClose={()=>setDataModal(false)}/>}
