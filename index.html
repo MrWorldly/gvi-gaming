@@ -659,7 +659,8 @@ If an existing note is provided, you may extract only these numeric values from 
 
 // ─── PROJECTION MODAL ─────────────────────────────────────────────────────────
 function ProjectionModal({game, onSave, onClose}){
-  const[atlPrice,setAtlPrice]=useState(game.targetPrice?.toString()||"");
+  const initPrice = game.targetPrice?.toString() || game.price?.toString() || "";
+  const[atlPrice,setAtlPrice]=useState(initPrice);
   const[hltbHours,setHltbHours]=useState("");
   const[loading,setLoading]=useState(false);
   const[result,setResult]=useState(null);
@@ -762,7 +763,10 @@ Generate a projection using the authoritative inputs above. The hours figure in 
           <div>
             <div style={{fontSize:9,letterSpacing:3,color:"#a78bfa",marginBottom:3}}>CLAUDE PROJECTION</div>
             <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9",marginBottom:4}}>{game.title}</div>
-            {game.dekuLink&&<a href={game.dekuLink} target="_blank" rel="noreferrer" style={{fontSize:10,color:"#a78bfa",fontFamily:"monospace",letterSpacing:1,textDecoration:"none"}}>VIEW ON DEKU DEALS ↗</a>}
+            <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+              {game.dekuLink&&<a href={game.dekuLink} target="_blank" rel="noreferrer" style={{fontSize:10,color:"#a78bfa",fontFamily:"monospace",letterSpacing:1,textDecoration:"none"}}>DEKU DEALS ↗</a>}
+              <a href={`https://howlongtobeat.com/?q=${encodeURIComponent(game.title)}`} target="_blank" rel="noreferrer" style={{fontSize:10,color:"#94a3b8",fontFamily:"monospace",letterSpacing:1,textDecoration:"none"}}>HLTB SEARCH ↗</a>
+            </div>
           </div>
           <button onClick={onClose} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:20,lineHeight:1}}>×</button>
         </div>
