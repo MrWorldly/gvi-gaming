@@ -23,6 +23,14 @@ const { useState, useEffect, useRef, useCallback, useMemo } = React;
 const { LineChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
         ResponsiveContainer, ReferenceLine, Cell, PieChart, Pie, Legend } = Recharts;
 
+// ─── CONSTANTS (defined early so all components can reference them) ────────────
+const LS_GIST_TOKEN   = "gvi-gist-token";
+const LS_ANTHROPIC_KEY = "gvi-anthropic-key";
+function lsGet(k){ try{ return localStorage.getItem(k); }catch{ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch{} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch{} }
+
+
 
 // ─── GVI FORMULA ─────────────────────────────────────────────────────────────
 function calcPersonalRating(g, i, a, m, r) {
@@ -1921,12 +1929,7 @@ const GIST_ID = "4c0053356a06460c57e3e54dd83b4f2b";
 const GIST_FILENAME = "gvi-library.json";
 const GIST_RAW = `https://gist.githubusercontent.com/MrWorldly/${GIST_ID}/raw/${GIST_FILENAME}`;
 const GIST_API = `https://api.github.com/gists/${GIST_ID}`;
-const LS_GIST_TOKEN = "gvi-gist-token";
-const LS_ANTHROPIC_KEY = "gvi-anthropic-key";
-
-function lsGet(k){ try{ return localStorage.getItem(k); }catch{ return null; } }
-function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch{} }
-function lsDel(k){ try{ localStorage.removeItem(k); }catch{} }
+// (LS_GIST_TOKEN, LS_ANTHROPIC_KEY, lsGet, lsSet, lsDel defined at top of file)
 
 async function fetchFromGist(){
   const r = await fetch(`${GIST_RAW}?cb=${Date.now()}`);
