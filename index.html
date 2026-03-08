@@ -225,7 +225,7 @@ function ScoreModal({game,initialStatus,onSave,onClose}){
   const[hours,setHours]=useState(game.hoursPlayed||"");
   const[difficulty,setDifficulty]=useState(game.difficulty||null);
   const[status,setStatus]=useState(initialStatus||game.status||"Completed");
-  const[date,setDate]=useState(today());
+  const[date,setDate]=useState(game.completionDate||"");
   const[abandonNote,setAbandonNote]=useState("");
 
   const canCalc=gameplay&&story&&art&&musicSound&&replay&&hours&&difficulty;
