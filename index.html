@@ -979,13 +979,10 @@ function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre}){
 }
 
 // ─── TABLE COMPONENTS ─────────────────────────────────────────────────────────
-function OwnedTable({games,onSelect,selected}){
-  const[filterStatus,setFilterStatus]=useState("All");
+function OwnedTable({games,onSelect,selected,sortKey,sortDir,onSortChange,filterStatus,onFilterStatusChange}){
   const[filterPlatform,setFilterPlatform]=useState("All");
   const[search,setSearch]=useState("");
-  const[sortKey,setSortKey]=useState("actualGVI");
-  const[sortDir,setSortDir]=useState("desc");
-  const toggleSort=k=>{if(sortKey===k)setSortDir(d=>d==="asc"?"desc":"asc");else{setSortKey(k);setSortDir("desc");}};
+  const toggleSort=k=>{if(sortKey===k)onSortChange(k,sortDir==="asc"?"desc":"asc");else onSortChange(k,"desc");};
 
   const filtered=games
     .filter(g=>filterStatus==="All"||g.status===filterStatus)
@@ -1004,8 +1001,11 @@ function OwnedTable({games,onSelect,selected}){
   return(
     <div>
       <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." style={{...S.input,width:180,padding:"5px 8px"}}/>
-        <Chips options={["All","In Progress","Not Started","Completed","Abandoned"]} active={filterStatus} onChange={setFilterStatus}/>
+        <div style={{position:"relative",display:"inline-flex",alignItems:"center"}}>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." style={{...S.input,width:180,padding:"5px 28px 5px 8px"}}/>
+          {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:6,background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:13,lineHeight:1,padding:0}}>✕</button>}
+        </div>
+        <Chips options={["All","In Progress","Not Started","Completed","Abandoned"]} active={filterStatus} onChange={onFilterStatusChange}/>
         <Chips options={["All","PS5","PS4","Switch 2","Switch","Steam","SNES"]} active={filterPlatform} onChange={setFilterPlatform}/>
       </div>
       <div style={{fontSize:9,letterSpacing:0.5,fontFamily:"'JetBrains Mono',monospace",color:"#94a3b8",marginBottom:6}}>{filtered.length} / {games.length} ENTRIES</div>
@@ -1033,12 +1033,10 @@ function OwnedTable({games,onSelect,selected}){
   );
 }
 
-function WishlistTable({items,onSelect,selected}){
+function WishlistTable({items,onSelect,selected,sortKey,sortDir,onSortChange}){
   const[filterPlatform,setFilterPlatform]=useState("All");
   const[search,setSearch]=useState("");
-  const[sortKey,setSortKey]=useState("projGVI");
-  const[sortDir,setSortDir]=useState("desc");
-  const toggleSort=k=>{if(sortKey===k)setSortDir(d=>d==="asc"?"desc":"asc");else{setSortKey(k);setSortDir("desc");}};
+  const toggleSort=k=>{if(sortKey===k)onSortChange(k,sortDir==="asc"?"desc":"asc");else onSortChange(k,"desc");};
   const filtered=items
     .filter(g=>filterPlatform==="All"||(g.platform||"").includes(filterPlatform))
     .filter(g=>!search||g.title.toLowerCase().includes(search.toLowerCase()))
@@ -1046,7 +1044,10 @@ function WishlistTable({items,onSelect,selected}){
   return(
     <div>
       <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." style={{...S.input,width:180,padding:"5px 8px"}}/>
+        <div style={{position:"relative",display:"inline-flex",alignItems:"center"}}>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." style={{...S.input,width:180,padding:"5px 28px 5px 8px"}}/>
+          {search&&<button onClick={()=>setSearch("")} style={{position:"absolute",right:6,background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:13,lineHeight:1,padding:0}}>✕</button>}
+        </div>
         <Chips options={["All","PS5","PS4","Switch 2","Switch","Steam"]} active={filterPlatform} onChange={setFilterPlatform}/>
       </div>
       <div style={{fontSize:9,letterSpacing:0.5,fontFamily:"'JetBrains Mono',monospace",color:"#94a3b8",marginBottom:6}}>{filtered.length} / {items.length} ENTRIES</div>
@@ -1854,23 +1855,28 @@ function InsightsTab({owned,wishlist}){
 
 
 // ─── STATS BAR ────────────────────────────────────────────────────────────────
-function StatsBar({owned,wishlist}){
+function StatsBar({owned,wishlist,onKpiClick}){
   const completed=owned.filter(g=>g.status==="Completed");
   const inProgress=owned.filter(g=>g.status==="In Progress");
   const avgGVI=completed.filter(g=>g.actualGVI).reduce((s,g,_,a)=>s+g.actualGVI/a.length,0)||0;
   const avgRating=completed.filter(g=>g.personalRating).reduce((s,g,_,a)=>s+g.personalRating/a.length,0)||0;
   const stats=[
-    {label:"OWNED",val:owned.length,color:"#a78bfa"},
-    {label:"COMPLETED",val:completed.length,color:"#4ade80"},
-    {label:"IN PROGRESS",val:inProgress.length,color:"#facc15"},
-    {label:"WISHLIST",val:wishlist.length,color:"#94a3b8"},
-    {label:"AVG GVI",val:avgGVI?avgGVI.toFixed(3):"—",color:gviColor(avgGVI)},
-    {label:"AVG RATING",val:avgRating?avgRating.toFixed(2):"—",color:avgRating>=8?"#a78bfa":"#4ade80"},
+    {label:"OWNED",val:owned.length,color:"#a78bfa",action:"owned"},
+    {label:"COMPLETED",val:completed.length,color:"#4ade80",action:"completed"},
+    {label:"IN PROGRESS",val:inProgress.length,color:"#facc15",action:"inprogress"},
+    {label:"WISHLIST",val:wishlist.length,color:"#94a3b8",action:"wishlist"},
+    {label:"AVG GVI",val:avgGVI?avgGVI.toFixed(3):"—",color:gviColor(avgGVI),action:null},
+    {label:"AVG RATING",val:avgRating?avgRating.toFixed(2):"—",color:avgRating>=8?"#a78bfa":"#4ade80",action:null},
   ];
   return(
     <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10,marginBottom:16}}>
-      {stats.map(({label,val,color})=>(
-        <div key={label} style={{background:"#0a1628",border:"1px solid #1e293b",borderRadius:4,padding:"11px 13px"}}>
+      {stats.map(({label,val,color,action})=>(
+        <div key={label}
+          onClick={action?()=>onKpiClick(action):undefined}
+          style={{background:"#0a1628",border:`1px solid ${action?"#334155":"#1e293b"}`,borderRadius:4,padding:"11px 13px",cursor:action?"pointer":"default",transition:action?"border-color 0.15s":"none"}}
+          onMouseEnter={action?e=>{e.currentTarget.style.borderColor="#7c3aed";}:undefined}
+          onMouseLeave={action?e=>{e.currentTarget.style.borderColor="#334155";}:undefined}
+        >
           <div style={{fontSize:9,letterSpacing:1,fontFamily:"'Inter',sans-serif",fontWeight:600,color:"#94a3b8",marginBottom:3}}>{label}</div>
           <div style={{fontSize:19,fontWeight:700,color}}>{val}</div>
         </div>
@@ -2153,6 +2159,11 @@ function App(){
   const [lastSynced, setLastSynced] = useState(null);
   const [toast, setToast] = useState(null);
   const [tab, setTab] = useState("owned");
+  const [ownedSortKey,  setOwnedSortKey]  = useState("personalRating");
+  const [ownedSortDir,  setOwnedSortDir]  = useState("desc");
+  const [ownedFilter,   setOwnedFilter]   = useState("All");
+  const [wishSortKey,   setWishSortKey]   = useState("projGVI");
+  const [wishSortDir,   setWishSortDir]   = useState("desc");
   const [selectedOwned, setSelectedOwned] = useState(null);
   const [selectedWish, setSelectedWish] = useState(null);
   const [scoreModal, setScoreModal] = useState(null);
@@ -2310,6 +2321,14 @@ function App(){
     doSave(no, wishlist).then(()=>showToast(`Saved — ${item.title}: Rating ${updates.projRating?.toFixed(2)} / GVI ${updates.projGVI?.toFixed(3)}`, "success"));
   };
 
+  const handleKpiClick = (action) => {
+    if(action==="owned")     { setTab("owned");    setOwnedFilter("All"); }
+    if(action==="wishlist")  { setTab("wishlist"); }
+    if(action==="completed") { setTab("owned");    setOwnedFilter("Completed"); }
+    if(action==="inprogress"){ setTab("owned");    setOwnedFilter("In Progress"); }
+    setSelectedOwned(null); setSelectedWish(null);
+  };
+
   const handleDekuSync = (stubs) => {
     const nw = [...wishlist, ...stubs];
     setWishlist(nw); doSave(owned, nw);
@@ -2388,7 +2407,7 @@ function App(){
 
       {/* BODY */}
       <div style={{ padding:"16px 24px" }}>
-        <StatsBar owned={owned} wishlist={wishlist}/>
+        <StatsBar owned={owned} wishlist={wishlist} onKpiClick={handleKpiClick}/>
         <TabBar
           tabs={[{key:"owned",label:"OWNED"},{key:"wishlist",label:"WISHLIST"},{key:"report",label:"REPORT"},{key:"insights",label:"INSIGHTS"}]}
           active={tab}
@@ -2402,7 +2421,14 @@ function App(){
               <Btn variant="ghost" size="sm" onClick={()=>setBatchRatingModal(true)}>✦ BATCH PROJ RATINGS</Btn>
               <Btn variant="ghost" size="sm" onClick={()=>setTab("wishlist")}>← WISHLIST</Btn>
             </div>
-            <OwnedTable games={owned} onSelect={g=>setSelectedOwned(selectedOwned?.title===g?.title?null:g)} selected={selectedOwned}/>
+            <OwnedTable
+              games={owned}
+              onSelect={g=>setSelectedOwned(selectedOwned?.title===g?.title?null:g)}
+              selected={selectedOwned}
+              sortKey={ownedSortKey} sortDir={ownedSortDir}
+              onSortChange={(k,d)=>{setOwnedSortKey(k);setOwnedSortDir(d);}}
+              filterStatus={ownedFilter} onFilterStatusChange={setOwnedFilter}
+            />
             <Drawer open={!!selectedOwned} onClose={()=>setSelectedOwned(null)}>
               {selectedOwned && (
               <OwnedDetail
@@ -2426,7 +2452,13 @@ function App(){
               <Btn variant="ghost" size="sm" onClick={()=>setDekuModal(true)}>⟳ SYNC DEKU DEALS</Btn>
               <Btn variant="primary" size="sm" onClick={()=>setAddWishModal(true)}>+ ADD ENTRY</Btn>
             </div>
-            <WishlistTable items={wishlist} onSelect={g=>setSelectedWish(selectedWish?.title===g?.title?null:g)} selected={selectedWish}/>
+            <WishlistTable
+              items={wishlist}
+              onSelect={g=>setSelectedWish(selectedWish?.title===g?.title?null:g)}
+              selected={selectedWish}
+              sortKey={wishSortKey} sortDir={wishSortDir}
+              onSortChange={(k,d)=>{setWishSortKey(k);setWishSortDir(d);}}
+            />
             <Drawer open={!!selectedWish} onClose={()=>setSelectedWish(null)}>
               {selectedWish && (
               <WishlistDetail
