@@ -785,13 +785,12 @@ Generate a projection using the authoritative inputs above. The hours figure in 
   function handleConfirm(){
     if(!result)return;
     const fullNote=result.formattedNote.replace("GVI Projection: [auto-calculated by UI]",`GVI Projection: ${result.projGVI.toFixed(3)}`);
-    // Only save the numeric fields — notes are displayed for copy-paste, not stored
     onSave({
       projRating: result.projectedRating,
       projGVI: result.projGVI,
       targetPrice: result.atlPrice,
       platform: result.platform,
-      copyNote: fullNote, // passed back for display only, not persisted
+      notes: fullNote,
     });
   }
 
