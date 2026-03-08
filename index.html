@@ -448,13 +448,19 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
 }
 
 // ─── OWNED DETAIL PANEL ───────────────────────────────────────────────────────
-function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre}){
+function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre,onSaveField}){
   const[editingNote,setEditingNote]=useState(false);
   const[noteVal,setNoteVal]=useState(g.notes||"");
   const[genreVal,setGenreVal]=useState(g.genres||[]);
+  const[editingPrice,setEditingPrice]=useState(false);
+  const[priceVal,setPriceVal]=useState(g.price?.toString()||"");
+  const[editingPurchaseDate,setEditingPurchaseDate]=useState(false);
+  const[purchaseDateVal,setPurchaseDateVal]=useState(g.purchaseDate||"");
   const canScore=g.status==="In Progress"||g.status==="Completed"||g.status==="Abandoned";
   const canStart=g.status==="Not Started";
   function saveNote(){onSaveNote(noteVal);setEditingNote(false);}
+  function savePrice(){onSaveField({price:priceVal?parseFloat(priceVal):0});setEditingPrice(false);}
+  function savePurchaseDate(){onSaveField({purchaseDate:purchaseDateVal});setEditingPurchaseDate(false);}
   return(
     <div style={{marginTop:14,background:"#0a1628",border:"1px solid #334155",borderRadius:4,padding:18,animation:"fadeIn 0.2s ease"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
@@ -463,6 +469,7 @@ function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre}){
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             <Tag color={STATUS_COLORS[g.status]} bg={STATUS_BG[g.status]}>{(g.status||"").toUpperCase()}</Tag>
             <Tag>{g.platform}</Tag>
+            {g.purchaseDate&&<Tag color="#64748b">BOUGHT {g.purchaseDate}</Tag>}
             {g.completionDate&&<Tag color="#64748b">COMPLETED {g.completionDate}</Tag>}
           </div>
         </div>
@@ -472,8 +479,41 @@ function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre}){
           <button onClick={onClose} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:18}}>×</button>
         </div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:14}}>
-        {[["PRICE","$"+(g.price?.toFixed(2)??"—")],["HRS PLAYED",g.hoursPlayed??0],["EST HRS",g.estHours??"—"],["DIFFICULTY",g.difficulty??"—"],["GVI Δ",{val:g.gviDelta,color:g.gviDelta==null?"#475569":g.gviDelta>=0?"#4ade80":"#f87171"}]].map(([l,v])=>(
+      {/* Editable price + purchase date row */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+        <div style={{background:"#060e1e",border:"1px solid #1e293b",borderRadius:3,padding:"8px 12px"}}>
+          <div style={{fontSize:9,letterSpacing:1.5,color:"#94a3b8",marginBottom:4}}>PURCHASE PRICE</div>
+          {editingPrice?(
+            <div style={{display:"flex",gap:4,alignItems:"center"}}>
+              <input type="number" value={priceVal} onChange={e=>setPriceVal(e.target.value)} step="0.01" min={0} autoFocus
+                style={{width:80,background:"#0a1628",border:"1px solid #7c3aed",borderRadius:3,padding:"3px 6px",color:"#e2e8f0",fontFamily:"monospace",fontSize:13,outline:"none"}}/>
+              <Btn size="sm" variant="success" onClick={savePrice}>✓</Btn>
+              <Btn size="sm" variant="ghost" onClick={()=>{setPriceVal(g.price?.toString()||"");setEditingPrice(false);}}>✕</Btn>
+            </div>
+          ):(
+            <div onClick={()=>setEditingPrice(true)} title="Click to edit" style={{fontSize:15,fontWeight:700,color:"#94a3b8",cursor:"pointer"}}>
+              {g.price!=null?`$${g.price.toFixed(2)}`:"—"} <span style={{fontSize:9,color:"#334155"}}>✎</span>
+            </div>
+          )}
+        </div>
+        <div style={{background:"#060e1e",border:"1px solid #1e293b",borderRadius:3,padding:"8px 12px"}}>
+          <div style={{fontSize:9,letterSpacing:1.5,color:"#94a3b8",marginBottom:4}}>PURCHASE DATE</div>
+          {editingPurchaseDate?(
+            <div style={{display:"flex",gap:4,alignItems:"center"}}>
+              <input value={purchaseDateVal} onChange={e=>setPurchaseDateVal(e.target.value)} placeholder="M/D/YYYY" autoFocus
+                style={{width:100,background:"#0a1628",border:"1px solid #7c3aed",borderRadius:3,padding:"3px 6px",color:"#e2e8f0",fontFamily:"monospace",fontSize:12,outline:"none"}}/>
+              <Btn size="sm" variant="success" onClick={savePurchaseDate}>✓</Btn>
+              <Btn size="sm" variant="ghost" onClick={()=>{setPurchaseDateVal(g.purchaseDate||"");setEditingPurchaseDate(false);}}>✕</Btn>
+            </div>
+          ):(
+            <div onClick={()=>setEditingPurchaseDate(true)} title="Click to edit" style={{fontSize:15,fontWeight:700,color:"#94a3b8",cursor:"pointer"}}>
+              {g.purchaseDate||"—"} <span style={{fontSize:9,color:"#334155"}}>✎</span>
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:14}}>
+        {[["HRS PLAYED",g.hoursPlayed??0],["EST HRS",g.estHours??"—"],["DIFFICULTY",g.difficulty??"—"],["GVI Δ",{val:g.gviDelta,color:g.gviDelta==null?"#475569":g.gviDelta>=0?"#4ade80":"#f87171"}]].map(([l,v])=>(
           <div key={l}><div style={{fontSize:9,letterSpacing:1.5,color:"#94a3b8",marginBottom:3}}>{l}</div><div style={{fontSize:15,fontWeight:700,color:typeof v==="object"?v.color:"#94a3b8"}}>{typeof v==="object"?fmtDelta(v.val):v}</div></div>
         ))}
       </div>
@@ -819,9 +859,40 @@ Generate a projection using the authoritative inputs above. The hours figure in 
 }
 
 // ─── WISHLIST DETAIL ──────────────────────────────────────────────────────────
+function ConfirmPurchaseModal({game, onConfirm, onClose}){
+  const[price,setPrice]=useState(game.targetPrice!=null?game.targetPrice.toString():"");
+  const[date,setDate]=useState(today());
+  const FF="'Inter',sans-serif";
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(6,14,30,0.92)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:"#0a1628",border:"1px solid #4ade8044",borderRadius:6,padding:24,width:"100%",maxWidth:420,animation:"fadeIn 0.2s ease"}}>
+        <div style={{fontSize:9,letterSpacing:3,color:"#4ade80",marginBottom:4}}>CONFIRM PURCHASE</div>
+        <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9",marginBottom:2}}>{game.title}</div>
+        <div style={{fontSize:11,color:"#64748b",marginBottom:20}}>{game.platform}</div>
+        <div style={{marginBottom:14}}>
+          <Lbl>ACTUAL PURCHASE PRICE ($)</Lbl>
+          {game.targetPrice!=null&&<div style={{fontSize:9,color:"#475569",marginBottom:4,fontFamily:"monospace"}}>Target was ${game.targetPrice.toFixed(2)}</div>}
+          <Inp type="number" value={price} onChange={setPrice} step="0.01" min={0}/>
+        </div>
+        <div style={{marginBottom:20}}>
+          <Lbl>PURCHASE DATE</Lbl>
+          <Inp value={date} onChange={setDate} placeholder="M/D/YYYY"/>
+        </div>
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+          <Btn variant="ghost" onClick={onClose}>CANCEL</Btn>
+          <Btn variant="success" onClick={()=>onConfirm(price?parseFloat(price):0, date)}>CONFIRM — MOVE TO OWNED</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre}){
   const[wishGenreVal,setWishGenreVal]=useState(g.genres||[]);
+  const[showBuyModal,setShowBuyModal]=useState(false);
   return(
+    <>
+    {showBuyModal&&<ConfirmPurchaseModal game={g} onConfirm={(price,date)=>{setShowBuyModal(false);onBuy(g,price,date);}} onClose={()=>setShowBuyModal(false)}/>}
     <div style={{marginTop:14,background:"#0a1628",border:"1px solid #334155",borderRadius:4,padding:18,animation:"fadeIn 0.2s ease"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
         <div>
@@ -834,7 +905,7 @@ function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre}){
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
           <Btn onClick={()=>onProject(g)} size="sm" variant="warn">✦ GET PROJECTION</Btn>
-          <Btn onClick={()=>onBuy(g)} size="sm" variant="success">I BOUGHT THIS</Btn>
+          <Btn onClick={()=>setShowBuyModal(true)} size="sm" variant="success">I BOUGHT THIS</Btn>
           <button onClick={onClose} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:18}}>×</button>
         </div>
       </div>
@@ -857,6 +928,7 @@ function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre}){
         <GenrePicker value={wishGenreVal} onChange={v=>{setWishGenreVal(v);onSaveGenre(v);}}/>
       </div>
     </div>
+    </>
   );
 }
 
@@ -2127,9 +2199,25 @@ function App(){
     setNeedsSetup(true);
   }
 
-  const handleBuy = (wi) => {
-    const t = today();
-    const e = { title:wi.title, status:"Not Started", platform:wi.platform, purchaseDate:t, completionDate:"", estHours:null, hoursPlayed:0, price:wi.targetPrice||0, difficulty:null, gameplay:null, story:null, art:null, musicSound:null, replay:null, projRating:wi.projRating, projGVI:wi.projGVI, notes:`Purchased ${t}`, personalRating:null, actualGVI:null, gviDelta:null, ratingDelta:null };
+  const handleBuy = (wi, price, purchaseDate) => {
+    const e = {
+      title:      wi.title,
+      status:     "Not Started",
+      platform:   wi.platform,
+      purchaseDate: purchaseDate || today(),
+      completionDate: "",
+      estHours:   wi.estHours || null,
+      hoursPlayed: 0,
+      price:      price ?? 0,
+      difficulty: null,
+      gameplay:   null, story: null, art: null, musicSound: null, replay: null,
+      projRating: wi.projRating  ?? null,
+      projGVI:    wi.projGVI     ?? null,
+      genres:     wi.genres      ?? [],
+      notes:      wi.notes       || "",
+      dekuLink:   wi.dekuLink    || "",
+      personalRating: null, actualGVI: null, gviDelta: null, ratingDelta: null,
+    };
     const no = [...owned, e], nw = wishlist.filter(w=>w.title!==wi.title);
     setOwned(no); setWishlist(nw); setSelectedWish(null);
     doSave(no, nw);
@@ -2268,6 +2356,7 @@ function App(){
                 onStart={()=>setStartedModal(selectedOwned)}
                 onSaveNote={note=>{ const u=owned.map(g=>g.title===selectedOwned.title?{...g,notes:note}:g); setOwned(u); setSelectedOwned({...selectedOwned,notes:note}); doSave(u,wishlist); }}
                 onSaveGenre={genres=>{ const u=owned.map(g=>g.title===selectedOwned.title?{...g,genres}:g); setOwned(u); setSelectedOwned({...selectedOwned,genres}); doSave(u,wishlist); }}
+                onSaveField={fields=>{ const u=owned.map(g=>g.title===selectedOwned.title?{...g,...fields}:g); setOwned(u); setSelectedOwned({...selectedOwned,...fields}); doSave(u,wishlist); }}
               />
             )}
           </>
