@@ -226,6 +226,7 @@ function ScoreModal({game,initialStatus,onSave,onClose}){
   const[difficulty,setDifficulty]=useState(game.difficulty||null);
   const[status,setStatus]=useState(initialStatus||game.status||"Completed");
   const[date,setDate]=useState(game.completionDate||"");
+  const[purchaseDate,setPurchaseDate]=useState(game.purchaseDate||"");
   const[abandonNote,setAbandonNote]=useState("");
 
   const canCalc=gameplay&&story&&art&&musicSound&&replay&&hours&&difficulty;
@@ -240,6 +241,7 @@ function ScoreModal({game,initialStatus,onSave,onClose}){
     onSave({
       ...game,status,
       completionDate: status!=="In Progress"?date:"",
+      purchaseDate: purchaseDate||game.purchaseDate||"",
       hoursPlayed:parseFloat(hours),difficulty,
       gameplay,story,art,musicSound,replay,
       personalRating:gviData.personalRating,
@@ -258,15 +260,19 @@ function ScoreModal({game,initialStatus,onSave,onClose}){
           <button onClick={onClose} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:20}}>×</button>
         </div>
 
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
           <div>
             <Lbl>STATUS</Lbl>
             <Sel value={status} onChange={setStatus} options={["Completed","Abandoned","In Progress"]}/>
           </div>
           <div>
-            <Lbl>{status==="Completed"?"COMPLETION DATE":status==="Abandoned"?"ABANDONMENT DATE":"DATE"}</Lbl>
-            <Inp value={date} onChange={setDate} placeholder="M/D/YYYY"/>
+            <Lbl>PURCHASE DATE</Lbl>
+            <Inp value={purchaseDate} onChange={setPurchaseDate} placeholder="M/D/YYYY"/>
           </div>
+          {status!=="In Progress"&&<div>
+            <Lbl>{status==="Completed"?"COMPLETION DATE":"ABANDONMENT DATE"}</Lbl>
+            <Inp value={date} onChange={setDate} placeholder="M/D/YYYY"/>
+          </div>}
         </div>
 
         {status==="Abandoned"&&(
