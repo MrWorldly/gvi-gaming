@@ -161,6 +161,47 @@ function Chips({options,active,onChange}){
   );
 }
 
+// ─── DRAWER ────────────────────────────────────────────────────────────────────
+function Drawer({open, onClose, children}){
+  // Lock body scroll when open on mobile
+  React.useEffect(()=>{
+    if(open){ document.body.style.overflow="hidden"; }
+    else { document.body.style.overflow=""; }
+    return ()=>{ document.body.style.overflow=""; };
+  },[open]);
+
+  return(
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position:"fixed",inset:0,background:"rgba(6,14,30,0.6)",
+          zIndex:90,
+          opacity:open?1:0,
+          pointerEvents:open?"auto":"none",
+          transition:"opacity 0.2s ease",
+        }}
+      />
+      {/* Panel */}
+      <div style={{
+        position:"fixed",top:0,right:0,bottom:0,
+        width:"min(440px, 100vw)",
+        background:"#060e1e",
+        borderLeft:"1px solid #1e293b",
+        zIndex:91,
+        overflowY:"auto",
+        padding:"16px 16px 32px 16px",
+        transform:open?"translateX(0)":"translateX(100%)",
+        transition:"transform 0.25s cubic-bezier(0.4,0,0.2,1)",
+        boxShadow:open?"-8px 0 40px rgba(0,0,0,0.6)":"none",
+      }}>
+        {children}
+      </div>
+    </>
+  );
+}
+
 // ─── GVI RESULT DISPLAY ───────────────────────────────────────────────────────
 function GVIResult({result,projGVI}){
   if(!result)return null;
@@ -462,7 +503,7 @@ function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre,onSaveFie
   function savePrice(){onSaveField({price:priceVal?parseFloat(priceVal):0});setEditingPrice(false);}
   function savePurchaseDate(){onSaveField({purchaseDate:purchaseDateVal});setEditingPurchaseDate(false);}
   return(
-    <div style={{marginTop:14,background:"#0a1628",border:"1px solid #334155",borderRadius:4,padding:18,animation:"fadeIn 0.2s ease"}}>
+    <div style={{background:"transparent",padding:"4px 0",animation:"fadeIn 0.2s ease"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
         <div>
           <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9",marginBottom:5}}>{g.title}</div>
@@ -898,7 +939,7 @@ function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre}){
   return(
     <>
     {showBuyModal&&<ConfirmPurchaseModal game={g} onConfirm={(price,date)=>{setShowBuyModal(false);onBuy(g,price,date);}} onClose={()=>setShowBuyModal(false)}/>}
-    <div style={{marginTop:14,background:"#0a1628",border:"1px solid #334155",borderRadius:4,padding:18,animation:"fadeIn 0.2s ease"}}>
+    <div style={{background:"transparent",padding:"4px 0",animation:"fadeIn 0.2s ease"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
         <div>
           <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9",marginBottom:5}}>{g.title}</div>
@@ -2361,8 +2402,9 @@ function App(){
               <Btn variant="ghost" size="sm" onClick={()=>setBatchRatingModal(true)}>✦ BATCH PROJ RATINGS</Btn>
               <Btn variant="ghost" size="sm" onClick={()=>setTab("wishlist")}>← WISHLIST</Btn>
             </div>
-            <OwnedTable games={owned} onSelect={setSelectedOwned} selected={selectedOwned}/>
-            {selectedOwned && (
+            <OwnedTable games={owned} onSelect={g=>setSelectedOwned(selectedOwned?.title===g?.title?null:g)} selected={selectedOwned}/>
+            <Drawer open={!!selectedOwned} onClose={()=>setSelectedOwned(null)}>
+              {selectedOwned && (
               <OwnedDetail
                 g={selectedOwned}
                 onClose={()=>setSelectedOwned(null)}
@@ -2373,7 +2415,8 @@ function App(){
                 onSaveField={fields=>{ const u=owned.map(g=>g.title===selectedOwned.title?{...g,...fields}:g); setOwned(u); setSelectedOwned({...selectedOwned,...fields}); doSave(u,wishlist); }}
                 onProject={()=>setProjectionModal({game:selectedOwned,source:"owned"})}
               />
-            )}
+              )}
+            </Drawer>
           </>
         )}
 
@@ -2383,8 +2426,9 @@ function App(){
               <Btn variant="ghost" size="sm" onClick={()=>setDekuModal(true)}>⟳ SYNC DEKU DEALS</Btn>
               <Btn variant="primary" size="sm" onClick={()=>setAddWishModal(true)}>+ ADD ENTRY</Btn>
             </div>
-            <WishlistTable items={wishlist} onSelect={setSelectedWish} selected={selectedWish}/>
-            {selectedWish && (
+            <WishlistTable items={wishlist} onSelect={g=>setSelectedWish(selectedWish?.title===g?.title?null:g)} selected={selectedWish}/>
+            <Drawer open={!!selectedWish} onClose={()=>setSelectedWish(null)}>
+              {selectedWish && (
               <WishlistDetail
                 g={selectedWish}
                 onClose={()=>setSelectedWish(null)}
@@ -2392,7 +2436,8 @@ function App(){
                 onProject={item=>setProjectionModal({game:item,source:"wishlist"})}
                 onSaveGenre={genres=>{ const u=wishlist.map(g=>g.title===selectedWish.title?{...g,genres}:g); setWishlist(u); setSelectedWish({...selectedWish,genres}); doSave(owned,u); }}
               />
-            )}
+              )}
+            </Drawer>
           </>
         )}
 
