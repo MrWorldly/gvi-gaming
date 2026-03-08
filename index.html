@@ -497,6 +497,14 @@ function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre,onSaveFie
   const[priceVal,setPriceVal]=useState(g.price?.toString()||"");
   const[editingPurchaseDate,setEditingPurchaseDate]=useState(false);
   const[purchaseDateVal,setPurchaseDateVal]=useState(g.purchaseDate||"");
+
+  // Re-sync local state when the game object is updated externally (e.g. after projection save)
+  React.useEffect(()=>{
+    setNoteVal(g.notes||"");
+    setGenreVal(g.genres||[]);
+    setPriceVal(g.price?.toString()||"");
+    setPurchaseDateVal(g.purchaseDate||"");
+  },[g]);
   const canScore=g.status==="In Progress"||g.status==="Completed"||g.status==="Abandoned";
   const canStart=g.status==="Not Started";
   function saveNote(){onSaveNote(noteVal);setEditingNote(false);}
@@ -637,7 +645,7 @@ const PROJECTION_SYSTEM_PROMPT = `You are a gaming advisor generating a projecte
 - Adult tone and restraint, extensive voice acting, earned emotional weight
 - Modern visuals, 7.1 surround sound, stable framerates
 - Sweet spot: 40–70 hours. Acceptable: 20–90h. Caution: 100h+
-- Nintendo cartoon exception: world-class execution overrides tone (Mario, Luigi's Mansion confirmed)
+- Nintendo cartoon exception: world-class execution FULLY overrides tone concerns — do NOT penalize art style or juvenile aesthetic for Mario, Luigi's Mansion, or similarly acclaimed Nintendo titles. These score as if they meet all tone preferences.
 - Beloved IP exception: Star Wars confirmed; apply cautiously
 
 **Hard Dealbreakers:**
@@ -733,19 +741,15 @@ function ProjectionModal({game, onSave, onClose}){
     if(!atlPrice||!hltbHours){setError("Enter both ATL price and HLTB hours to continue.");return;}
     setLoading(true);setError(null);
     try{
-      const existingNote=game.notes||"";
       const userMsg=`Game title: "${game.title}"
 
-## YOUR AUTHORITATIVE INPUTS — use these exact values, do not override from existing note:
+## AUTHORITATIVE INPUTS — use these exact values:
 - ATL price: $${parseFloat(atlPrice).toFixed(2)}
 - Estimated hours: ${inflatedHours?.toFixed(1)}h (HLTB base ${hltbHours}h × 1.4 inflation)
 - Hours band for GVI: ${hoursBandLabel(inflatedHours||0)}
 - Platform: ${game.platform||"unknown"}
 
-## EXISTING NOTE (for context and extraction of GVI/rating projections only — do NOT copy hours figures from here):
-${existingNote||"None."}
-
-Generate a projection using the authoritative inputs above. The hours figure in your note must reflect ${inflatedHours?.toFixed(1)}h inflated, not any figure from the existing note.`;
+Generate a FRESH projection based solely on the inputs above and the player profile. Do NOT reference or extract from any previous note. Evaluate the game independently.`;
 
       const response=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
