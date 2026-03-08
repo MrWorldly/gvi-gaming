@@ -2665,6 +2665,7 @@ function App(){
       </div>
 
       {/* MODALS */}
+      {configModal && <EditPromptsModal config={config} defaultProjection={DEFAULT_PROJECTION_PROMPT} onSave={cfg=>{saveConfig(cfg);setConfigModal(false);}} onClose={()=>setConfigModal(false)}/>}
       {scoreModal && <ScoreModal game={scoreModal.game} initialStatus={scoreModal.initialStatus} onSave={handleScore} onClose={()=>setScoreModal(null)}/>}
       {startedModal && <StartedModal game={startedModal} onSave={handleStarted} onClose={()=>setStartedModal(null)}/>}
       {addWishModal && <AddWishlistModal existingTitles={wishlist.map(w=>w.title)} onSave={handleAddWish} onClose={()=>setAddWishModal(false)}/>}
