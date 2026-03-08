@@ -41,13 +41,9 @@
       document.getElementById('fatal-error').style.display = 'block';
       document.getElementById('fatal-error').textContent = 'LOAD ERROR\n\nReact failed to load from CDN.\nCheck your internet connection and try again.';
     }
-    document.getElementById('boot-status').textContent = 'COMPILING...';
   </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.4/babel.min.js" crossorigin="anonymous"></script>
-  <script>
+<script>
     document.getElementById('boot-status').style.display = 'none';
-  </script>
-  <script type="text/babel" data-presets="react" data-plugins="">
     const { useState, useEffect, useCallback, useRef } = React;
 
 // ─── GVI FORMULA ─────────────────────────────────────────────────────────────
@@ -263,58 +259,49 @@ input:{width:“100%”,boxSizing:“border-box”,background:”#1e293b”,bord
 label:{fontFamily:“monospace”,fontSize:10,letterSpacing:1.5,color:”#64748b”,marginBottom:4,display:“block”},
 };
 function Inp({value,onChange,type=“text”,placeholder=””,min,max,step}){
-return <input type={type} value={value??””} onChange={e=>onChange(e.target.value)} placeholder={placeholder} min={min} max={max} step={step} style={S.input}/>;
+return React.createElement(“input”, {“type”: type, “value”: value??””, “onChange”: e=>onChange(e.target.value), “placeholder”: placeholder, “min”: min, “max”: max, “step”: step, “style”: S.input});
 }
-function Lbl({children}){return <label style={S.label}>{children}</label>;}
+function Lbl({children}){return React.createElement(“label”, {“style”: S.label}, children);}
 function Sel({value,onChange,options}){
-return <select value={value} onChange={e=>onChange(e.target.value)} style={S.input}>{options.map(o=><option key={o.value??o}value={o.value??o}>{o.label??o}</option>)}</select>;
+return React.createElement(“select”, {“value”: value, “onChange”: e=>onChange(e.target.value), “style”: S.input}, options.map(o=>React.createElement(“option”, {“key”: o.value??o, “value”: o.value??o}, o.label??o)));
 }
 function Btn({children,onClick,variant=“primary”,size=“md”,disabled}){
 const variants={primary:{bg:”#7c3aed”,border:”#7c3aed”,color:”#fff”},ghost:{bg:“transparent”,border:”#334155”,color:”#94a3b8”},danger:{bg:“rgba(248,113,113,0.12)”,border:”#f87171”,color:”#f87171”},success:{bg:“rgba(74,222,128,0.12)”,border:”#4ade80”,color:”#4ade80”},warn:{bg:“rgba(250,204,21,0.12)”,border:”#facc15”,color:”#facc15”}};
 const v=variants[variant]||variants.primary;
 const pad=size===“sm”?“3px 9px”:“7px 16px”;
-return <button onClick={disabled?undefined:onClick} disabled={disabled} style={{padding:pad,borderRadius:3,cursor:disabled?“not-allowed”:“pointer”,fontSize:size===“sm”?10:11,fontFamily:”‘Courier Prime’,monospace”,letterSpacing:1.5,background:v.bg,border:`1px solid ${v.border}`,color:v.color,opacity:disabled?0.45:1,transition:“all 0.15s”}}>{children}</button>;
+return React.createElement(“button”, {“onClick”: disabled?undefined:onClick, “disabled”: disabled, “style”: {padding:pad,borderRadius:3,cursor:disabled?“not-allowed”:“pointer”,fontSize:size===“sm”?10:11,fontFamily:”‘Courier Prime’,monospace”,letterSpacing:1.5,background:v.bg,border:`1px solid ${v.border}`,color:v.color,opacity:disabled?0.45:1,transition:“all 0.15s”}}, children);
 }
-function Tag({children,color,bg}){return <span style={{background:bg||”#1e293b”,color:color||”#94a3b8”,padding:“2px 7px”,borderRadius:2,fontSize:9,letterSpacing:1.5,fontFamily:“monospace”,whiteSpace:“nowrap”}}>{children}</span>;}
+function Tag({children,color,bg}){return React.createElement(“span”, {“style”: {background:bg||”#1e293b”,color:color||”#94a3b8”,padding:“2px 7px”,borderRadius:2,fontSize:9,letterSpacing:1.5,fontFamily:“monospace”,whiteSpace:“nowrap”}}, children);}
 function RatingBar({v}){
-if(!v)return <span style={{color:”#334155”,fontSize:11}}>—</span>;
+if(!v)return React.createElement(“span”, {“style”: {color:”#334155”,fontSize:11}}, “—”);
 const pct=(v/10)*100,col=v>=8.5?”#a78bfa”:v>=7?”#4ade80”:v>=5?”#facc15”:”#f87171”;
-return <div style={{display:“flex”,alignItems:“center”,gap:6}}><div style={{flex:1,height:4,background:”#1e293b”,borderRadius:2}}><div style={{width:`${pct}%`,height:“100%”,background:col,borderRadius:2}}/></div><span style={{fontFamily:“monospace”,fontSize:11,color:col,minWidth:30}}>{v.toFixed(2)}</span></div>;
+return React.createElement(“div”, {“style”: {display:“flex”,alignItems:“center”,gap:6}}, React.createElement(“div”, {“style”: {flex:1,height:4,background:”#1e293b”,borderRadius:2}}, React.createElement(“div”, {“style”: {width:`${pct}%`,height:“100%”,background:col,borderRadius:2}})), React.createElement(“span”, {“style”: {fontFamily:“monospace”,fontSize:11,color:col,minWidth:30}}, v.toFixed(2)));
 }
 function Toast({msg,type}){
 if(!msg)return null;
 const col=type===“error”?”#f87171”:type===“warn”?”#facc15”:”#4ade80”;
-return <div style={{position:“fixed”,bottom:24,right:24,zIndex:300,background:”#0f172a”,border:`1px solid ${col}`,padding:“10px 16px”,borderRadius:4,fontFamily:“monospace”,fontSize:12,color:col,letterSpacing:1,boxShadow:`0 0 24px ${col}33`,animation:“fadeIn 0.2s ease”,maxWidth:360}}>{msg}</div>;
+return React.createElement(“div”, {“style”: {position:“fixed”,bottom:24,right:24,zIndex:300,background:”#0f172a”,border:`1px solid ${col}`,padding:“10px 16px”,borderRadius:4,fontFamily:“monospace”,fontSize:12,color:col,letterSpacing:1,boxShadow:`0 0 24px ${col}33`,animation:“fadeIn 0.2s ease”,maxWidth:360}}, msg);
 }
-function Divider(){return <div style={{height:1,background:”#1e293b”,margin:“16px 0”}}/>;}
+function Divider(){return React.createElement(“div”, {“style”: {height:1,background:”#1e293b”,margin:“16px 0”}});}
 function ScoreInput({label,value,onChange}){
 return(
-<div>
-<Lbl>{label} <span style={{color:value?gviColor(value/10):”#334155”}}>{value||”—”}</span></Lbl>
-<div style={{display:“flex”,gap:4,flexWrap:“wrap”}}>
-{[1,2,3,4,5,6,7,8,9,10].map(n=>(
-<button key={n} onClick={()=>onChange(value===n?null:n)} style={{width:26,height:26,borderRadius:2,border:`1px solid ${value===n?gviColor(n/10):"#1e293b"}`,background:value===n?gviColor(n/10)+“22”:“transparent”,color:value===n?gviColor(n/10):”#475569”,fontSize:10,fontFamily:“monospace”,cursor:“pointer”}}>{n}</button>
-))}
-</div>
-</div>
+React.createElement(“div”, null, React.createElement(Lbl, null, label, React.createElement(“span”, {“style”: {color:value?gviColor(value/10):”#334155”}}, value||”—”)), React.createElement(“div”, {“style”: {display:“flex”,gap:4,flexWrap:“wrap”}}, [1,2,3,4,5,6,7,8,9,10].map(n=>(
+React.createElement(“button”, {“key”: n, “onClick”: ()=>onChange(value===n?null:n), “style”: {width:26,height:26,borderRadius:2,border:`1px solid ${value===n?gviColor(n/10):"#1e293b"}`,background:value===n?gviColor(n/10)+“22”:“transparent”,color:value===n?gviColor(n/10):”#475569”,fontSize:10,fontFamily:“monospace”,cursor:“pointer”}}, n)
+))))
 );
 }
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 function TabBar({tabs,active,onChange}){
 return(
-<div style={{display:“flex”,gap:0,borderBottom:“1px solid #1e293b”,marginBottom:16}}>
-{tabs.map(t=><button key={t.key} onClick={()=>onChange(t.key)} style={{padding:“9px 18px”,background:“transparent”,border:“none”,borderBottom:`2px solid ${active===t.key?"#7c3aed":"transparent"}`,color:active===t.key?”#a78bfa”:”#475569”,fontFamily:“monospace”,fontSize:11,letterSpacing:1.5,cursor:“pointer”,transition:“all 0.15s”}}>{t.label}</button>)}
-</div>
+React.createElement(“div”, {“style”: {display:“flex”,gap:0,borderBottom:“1px solid #1e293b”,marginBottom:16}}, tabs.map(t=>React.createElement(“button”, {“key”: t.key, “onClick”: ()=>onChange(t.key), “style”: {padding:“9px 18px”,background:“transparent”,border:“none”,borderBottom:`2px solid ${active===t.key?"#7c3aed":"transparent"}`,color:active===t.key?”#a78bfa”:”#475569”,fontFamily:“monospace”,fontSize:11,letterSpacing:1.5,cursor:“pointer”,transition:“all 0.15s”}}, t.label)))
 );
 }
 
 // ─── FILTER CHIPS ─────────────────────────────────────────────────────────────
 function Chips({options,active,onChange}){
 return(
-<div style={{display:“flex”,flexWrap:“wrap”,gap:3}}>
-{options.map(o=><button key={o} onClick={()=>onChange(o)} style={{padding:“3px 8px”,borderRadius:2,cursor:“pointer”,fontSize:9,letterSpacing:1,fontFamily:“monospace”,background:active===o?”#1e293b”:“transparent”,border:`1px solid ${active===o?"#7c3aed":"#1e293b"}`,color:active===o?”#a78bfa”:”#475569”,transition:“all 0.15s”}}>{o}</button>)}
-</div>
+React.createElement(“div”, {“style”: {display:“flex”,flexWrap:“wrap”,gap:3}}, options.map(o=>React.createElement(“button”, {“key”: o, “onClick”: ()=>onChange(o), “style”: {padding:“3px 8px”,borderRadius:2,cursor:“pointer”,fontSize:9,letterSpacing:1,fontFamily:“monospace”,background:active===o?”#1e293b”:“transparent”,border:`1px solid ${active===o?"#7c3aed":"#1e293b"}`,color:active===o?”#a78bfa”:”#475569”,transition:“all 0.15s”}}, o)))
 );
 }
 
@@ -324,21 +311,9 @@ if(!result)return null;
 const{personalRating,ratingsComp,hoursComp,priceComp,baseGVI,completionAdj,finalGVI}=result;
 const delta=projGVI!=null?finalGVI-projGVI:null;
 return(
-<div style={{background:”#060e1e”,border:`1px solid ${gviColor(finalGVI)}44`,borderRadius:4,padding:16,marginTop:12}}>
-<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12,marginBottom:12}}>
-<div><div style={S.label}>PERSONAL RATING</div><div style={{fontSize:28,fontWeight:700,color:gviColor(personalRating/10)}}>{personalRating.toFixed(2)}</div></div>
-<div><div style={S.label}>FINAL GVI</div><div style={{fontSize:28,fontWeight:700,color:gviColor(finalGVI)}}>{finalGVI.toFixed(3)}</div>{delta!=null&&<div style={{fontSize:11,fontFamily:“monospace”,color:delta>=0?”#4ade80”:”#f87171”}}>vs projection: {fmtDelta(delta)}</div>}</div>
-</div>
-<div style={{display:“grid”,gridTemplateColumns:“repeat(4,1fr)”,gap:8,fontSize:10,fontFamily:“monospace”}}>
-{[[“RATINGS”,ratingsComp],[“HOURS”,hoursComp],[“PRICE”,priceComp],[“COMP ADJ”,completionAdj,true]].map(([l,v,signed])=>(
-<div key={l} style={{background:”#0a1628”,borderRadius:3,padding:“6px 8px”}}>
-<div style={{color:”#475569”,marginBottom:2}}>{l}</div>
-<div style={{color:signed?(v>=0?”#4ade80”:”#f87171”):”#94a3b8”}}>{signed?(v>=0?”+”:””)+v.toFixed(3):v.toFixed(4)}</div>
-</div>
-))}
-</div>
-<div style={{marginTop:8,fontSize:9,letterSpacing:1.5,color:gviColor(finalGVI)}}>{finalGVI>=0.9?“EXCEPTIONAL VALUE”:finalGVI>=0.8?“STRONG VALUE”:finalGVI>=0.7?“GOOD VALUE”:finalGVI>=0.6?“ACCEPTABLE”:“POOR VALUE”}</div>
-</div>
+React.createElement(“div”, {“style”: {background:”#060e1e”,border:`1px solid ${gviColor(finalGVI)}44`,borderRadius:4,padding:16,marginTop:12}}, React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12,marginBottom:12}}, React.createElement(“div”, null, React.createElement(“div”, {“style”: S.label}, “PERSONAL RATING”), React.createElement(“div”, {“style”: {fontSize:28,fontWeight:700,color:gviColor(personalRating/10)}}, personalRating.toFixed(2))), React.createElement(“div”, null, React.createElement(“div”, {“style”: S.label}, “FINAL GVI”), React.createElement(“div”, {“style”: {fontSize:28,fontWeight:700,color:gviColor(finalGVI)}}, finalGVI.toFixed(3)), delta!=null&&React.createElement(“div”, {“style”: {fontSize:11,fontFamily:“monospace”,color:delta>=0?”#4ade80”:”#f87171”}}, “vs projection:”, fmtDelta(delta)))), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“repeat(4,1fr)”,gap:8,fontSize:10,fontFamily:“monospace”}}, [[“RATINGS”,ratingsComp],[“HOURS”,hoursComp],[“PRICE”,priceComp],[“COMP ADJ”,completionAdj,true]].map(([l,v,signed])=>(
+React.createElement(“div”, {“key”: l, “style”: {background:”#0a1628”,borderRadius:3,padding:“6px 8px”}}, React.createElement(“div”, {“style”: {color:”#475569”,marginBottom:2}}, l), React.createElement(“div”, {“style”: {color:signed?(v>=0?”#4ade80”:”#f87171”):”#94a3b8”}}, signed?(v>=0?”+”:””)+v.toFixed(3):v.toFixed(4)))
+))), React.createElement(“div”, {“style”: {marginTop:8,fontSize:9,letterSpacing:1.5,color:gviColor(finalGVI)}}, finalGVI>=0.9?“EXCEPTIONAL VALUE”:finalGVI>=0.8?“STRONG VALUE”:finalGVI>=0.7?“GOOD VALUE”:finalGVI>=0.6?“ACCEPTABLE”:“POOR VALUE”))
 );
 }
 
@@ -378,69 +353,11 @@ onClose();
 };
 
 return(
-<div style={{position:“fixed”,inset:0,background:“rgba(0,0,0,0.88)”,zIndex:100,display:“flex”,alignItems:“center”,justifyContent:“center”}} onClick={onClose}>
-<div onClick={e=>e.stopPropagation()} style={{background:”#0f172a”,border:“1px solid #334155”,borderRadius:4,padding:24,width:600,maxHeight:“92vh”,overflowY:“auto”,boxShadow:“0 0 50px rgba(0,0,0,0.9)”}}>
-<div style={{display:“flex”,justifyContent:“space-between”,alignItems:“center”,marginBottom:16}}>
-<div><div style={{fontSize:9,letterSpacing:3,color:”#7c3aed”,marginBottom:2}}>WORKFLOW 5 / 6 / 7</div><div style={{fontSize:14,fontWeight:700}}>{game.title}</div></div>
-<button onClick={onClose} style={{background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:20}}>×</button>
-</div>
-
-```
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-      <div>
-        <Lbl>STATUS</Lbl>
-        <Sel value={status} onChange={setStatus} options={["Completed","Abandoned","In Progress"]}/>
-      </div>
-      <div>
-        <Lbl>{status==="Completed"?"COMPLETION DATE":status==="Abandoned"?"ABANDONMENT DATE":"DATE"}</Lbl>
-        <Inp value={date} onChange={setDate} placeholder="M/D/YYYY"/>
-      </div>
-    </div>
-
-    {status==="Abandoned"&&(
-      <div style={{marginBottom:16}}>
-        <Lbl>REASON FOR ABANDONING</Lbl>
-        <Inp value={abandonNote} onChange={setAbandonNote} placeholder="One sentence..."/>
-      </div>
-    )}
-
-    <Divider/>
-    <div style={{fontSize:9,letterSpacing:2,color:"#475569",marginBottom:12}}>COMPONENT SCORES</div>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
-      <ScoreInput label="GAMEPLAY (×0.35)" value={gameplay} onChange={setGameplay}/>
-      <ScoreInput label="STORY (×0.25)" value={story} onChange={setStory}/>
-      <ScoreInput label="ART (×0.20)" value={art} onChange={setArt}/>
-      <ScoreInput label="MUSIC/SOUND (×0.15)" value={musicSound} onChange={setMusicSound}/>
-      <ScoreInput label="REPLAY (×0.05)" value={replay} onChange={setReplay}/>
-      <div>
-        <Lbl>DIFFICULTY <span style={{color:difficulty?gviColor(difficulty/10):"#334155"}}>{difficulty||"—"}</span></Lbl>
-        <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-          {[1,2,3,4,5,6,7,8,9,10].map(n=>(
-            <button key={n} onClick={()=>setDifficulty(difficulty===n?null:n)} style={{width:26,height:26,borderRadius:2,border:`1px solid ${difficulty===n?"#fb923c":"#1e293b"}`,background:difficulty===n?"rgba(251,146,60,0.15)":"transparent",color:difficulty===n?"#fb923c":"#475569",fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>{n}</button>
-          ))}
-        </div>
-      </div>
-    </div>
-
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-      <div><Lbl>HOURS PLAYED</Lbl><Inp type="number" value={hours} onChange={setHours} min={0} step={0.5}/></div>
-      <div style={{display:"flex",alignItems:"flex-end",gap:6,paddingBottom:1}}>
-        <div style={{fontSize:10,color:"#475569",fontFamily:"monospace"}}>Price on file: <span style={{color:"#94a3b8"}}>${game.price?.toFixed(2)??"—"}</span></div>
-      </div>
-    </div>
-
-    <GVIResult result={result} projGVI={game.projGVI}/>
-
-    <div style={{display:"flex",gap:8,marginTop:16,justifyContent:"flex-end"}}>
-      <Btn onClick={onClose} variant="ghost">Cancel</Btn>
-      <Btn onClick={handleSave} disabled={!canCalc} variant={status==="Abandoned"?"danger":status==="Completed"?"success":"primary"}>
-        {status==="Completed"?"SAVE COMPLETION":status==="Abandoned"?"SAVE ABANDONMENT":"SAVE SCORES"}
-      </Btn>
-    </div>
-  </div>
-</div>
-```
-
+React.createElement(“div”, {“style”: {position:“fixed”,inset:0,background:“rgba(0,0,0,0.88)”,zIndex:100,display:“flex”,alignItems:“center”,justifyContent:“center”}, “onClick”: onClose}, React.createElement(“div”, {“onClick”: e=>e.stopPropagation(), “style”: {background:”#0f172a”,border:“1px solid #334155”,borderRadius:4,padding:24,width:600,maxHeight:“92vh”,overflowY:“auto”,boxShadow:“0 0 50px rgba(0,0,0,0.9)”}}, React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“space-between”,alignItems:“center”,marginBottom:16}}, React.createElement(“div”, null, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:3,color:”#7c3aed”,marginBottom:2}}, “WORKFLOW 5 / 6 / 7”), React.createElement(“div”, {“style”: {fontSize:14,fontWeight:700}}, game.title)), React.createElement(“button”, {“onClick”: onClose, “style”: {background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:20}}, “×”)), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12,marginBottom:16}}, React.createElement(“div”, null, React.createElement(Lbl, null, “STATUS”), React.createElement(Sel, {“value”: status, “onChange”: setStatus, “options”: [“Completed”,“Abandoned”,“In Progress”]})), React.createElement(“div”, null, React.createElement(Lbl, null, status===“Completed”?“COMPLETION DATE”:status===“Abandoned”?“ABANDONMENT DATE”:“DATE”), React.createElement(Inp, {“value”: date, “onChange”: setDate, “placeholder”: “M/D/YYYY”}))), status===“Abandoned”&&(
+React.createElement(“div”, {“style”: {marginBottom:16}}, React.createElement(Lbl, null, “REASON FOR ABANDONING”), React.createElement(Inp, {“value”: abandonNote, “onChange”: setAbandonNote, “placeholder”: “One sentence…”}))
+), React.createElement(Divider, null), React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:2,color:”#475569”,marginBottom:12}}, “COMPONENT SCORES”), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:14,marginBottom:16}}, React.createElement(ScoreInput, {“label”: “GAMEPLAY (×0.35)”, “value”: gameplay, “onChange”: setGameplay}), React.createElement(ScoreInput, {“label”: “STORY (×0.25)”, “value”: story, “onChange”: setStory}), React.createElement(ScoreInput, {“label”: “ART (×0.20)”, “value”: art, “onChange”: setArt}), React.createElement(ScoreInput, {“label”: “MUSIC/SOUND (×0.15)”, “value”: musicSound, “onChange”: setMusicSound}), React.createElement(ScoreInput, {“label”: “REPLAY (×0.05)”, “value”: replay, “onChange”: setReplay}), React.createElement(“div”, null, React.createElement(Lbl, null, “DIFFICULTY”, React.createElement(“span”, {“style”: {color:difficulty?gviColor(difficulty/10):”#334155”}}, difficulty||”—”)), React.createElement(“div”, {“style”: {display:“flex”,gap:4,flexWrap:“wrap”}}, [1,2,3,4,5,6,7,8,9,10].map(n=>(
+React.createElement(“button”, {“key”: n, “onClick”: ()=>setDifficulty(difficulty===n?null:n), “style”: {width:26,height:26,borderRadius:2,border:`1px solid ${difficulty===n?"#fb923c":"#1e293b"}`,background:difficulty===n?“rgba(251,146,60,0.15)”:“transparent”,color:difficulty===n?”#fb923c”:”#475569”,fontSize:10,fontFamily:“monospace”,cursor:“pointer”}}, n)
+))))), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12,marginBottom:16}}, React.createElement(“div”, null, React.createElement(Lbl, null, “HOURS PLAYED”), React.createElement(Inp, {“type”: “number”, “value”: hours, “onChange”: setHours, “min”: 0, “step”: 0.5})), React.createElement(“div”, {“style”: {display:“flex”,alignItems:“flex-end”,gap:6,paddingBottom:1}}, React.createElement(“div”, {“style”: {fontSize:10,color:”#475569”,fontFamily:“monospace”}}, “Price on file:”, React.createElement(“span”, {“style”: {color:”#94a3b8”}}, “$”, game.price?.toFixed(2)??”—”)))), React.createElement(GVIResult, {“result”: result, “projGVI”: game.projGVI}), React.createElement(“div”, {“style”: {display:“flex”,gap:8,marginTop:16,justifyContent:“flex-end”}}, React.createElement(Btn, {“onClick”: onClose, “variant”: “ghost”}, “Cancel”), React.createElement(Btn, {“onClick”: handleSave, “disabled”: !canCalc, “variant”: status===“Abandoned”?“danger”:status===“Completed”?“success”:“primary”}, status===“Completed”?“SAVE COMPLETION”:status===“Abandoned”?“SAVE ABANDONMENT”:“SAVE SCORES”))))
 );
 }
 
@@ -454,31 +371,7 @@ const[projRating,setProjRating]=useState(””);
 const[dekuLink,setDekuLink]=useState(””);
 const duplicate=existingTitles.includes(title.trim());
 return(
-<div style={{position:“fixed”,inset:0,background:“rgba(0,0,0,0.88)”,zIndex:100,display:“flex”,alignItems:“center”,justifyContent:“center”}} onClick={onClose}>
-<div onClick={e=>e.stopPropagation()} style={{background:”#0f172a”,border:“1px solid #334155”,borderRadius:4,padding:24,width:480,boxShadow:“0 0 50px rgba(0,0,0,0.9)”}}>
-<div style={{display:“flex”,justifyContent:“space-between”,marginBottom:16}}>
-<div><div style={{fontSize:9,letterSpacing:3,color:”#7c3aed”,marginBottom:2}}>WORKFLOW 2</div><div style={{fontSize:14,fontWeight:700}}>ADD TO WISHLIST</div></div>
-<button onClick={onClose} style={{background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:20}}>×</button>
-</div>
-<div style={{display:“grid”,gridTemplateColumns:“1fr”,gap:12}}>
-<div>
-<Lbl>TITLE {duplicate&&<span style={{color:”#f87171”}}>— already on wishlist</span>}</Lbl>
-<Inp value={title} onChange={setTitle} placeholder="Game title..."/>
-</div>
-<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12}}>
-<div><Lbl>PLATFORM</Lbl><Sel value={platform} onChange={setPlatform} options={VALID_PLATFORMS}/></div>
-<div><Lbl>TARGET PRICE ($)</Lbl><Inp type="number" value={targetPrice} onChange={setTargetPrice} step="0.01" min={0}/></div>
-<div><Lbl>PROJECTED GVI</Lbl><Inp type="number" value={projGVI} onChange={setProjGVI} step="0.001" min={0} max={1.2}/></div>
-<div><Lbl>PROJECTED RATING</Lbl><Inp type="number" value={projRating} onChange={setProjRating} step="0.01" min={1} max={10}/></div>
-</div>
-<div><Lbl>DEKU DEALS LINK (optional)</Lbl><Inp value={dekuLink} onChange={setDekuLink} placeholder="https://www.dekudeals.com/items/..."/></div>
-</div>
-<div style={{display:“flex”,gap:8,marginTop:16,justifyContent:“flex-end”}}>
-<Btn onClick={onClose} variant="ghost">Cancel</Btn>
-<Btn onClick={()=>{if(!title.trim()||duplicate)return;onSave({title:title.trim(),platform,targetPrice:targetPrice?parseFloat(targetPrice):null,projGVI:projGVI?parseFloat(projGVI):null,projRating:projRating?parseFloat(projRating):null,dekuLink:dekuLink||””});onClose();}} disabled={!title.trim()||duplicate}>ADD TO WISHLIST</Btn>
-</div>
-</div>
-</div>
+React.createElement(“div”, {“style”: {position:“fixed”,inset:0,background:“rgba(0,0,0,0.88)”,zIndex:100,display:“flex”,alignItems:“center”,justifyContent:“center”}, “onClick”: onClose}, React.createElement(“div”, {“onClick”: e=>e.stopPropagation(), “style”: {background:”#0f172a”,border:“1px solid #334155”,borderRadius:4,padding:24,width:480,boxShadow:“0 0 50px rgba(0,0,0,0.9)”}}, React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“space-between”,marginBottom:16}}, React.createElement(“div”, null, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:3,color:”#7c3aed”,marginBottom:2}}, “WORKFLOW 2”), React.createElement(“div”, {“style”: {fontSize:14,fontWeight:700}}, “ADD TO WISHLIST”)), React.createElement(“button”, {“onClick”: onClose, “style”: {background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:20}}, “×”)), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr”,gap:12}}, React.createElement(“div”, null, React.createElement(Lbl, null, “TITLE”, duplicate&&React.createElement(“span”, {“style”: {color:”#f87171”}}, “— already on wishlist”)), React.createElement(Inp, {“value”: title, “onChange”: setTitle, “placeholder”: “Game title…”})), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12}}, React.createElement(“div”, null, React.createElement(Lbl, null, “PLATFORM”), React.createElement(Sel, {“value”: platform, “onChange”: setPlatform, “options”: VALID_PLATFORMS})), React.createElement(“div”, null, React.createElement(Lbl, null, “TARGET PRICE ($)”), React.createElement(Inp, {“type”: “number”, “value”: targetPrice, “onChange”: setTargetPrice, “step”: “0.01”, “min”: 0})), React.createElement(“div”, null, React.createElement(Lbl, null, “PROJECTED GVI”), React.createElement(Inp, {“type”: “number”, “value”: projGVI, “onChange”: setProjGVI, “step”: “0.001”, “min”: 0, “max”: 1.2})), React.createElement(“div”, null, React.createElement(Lbl, null, “PROJECTED RATING”), React.createElement(Inp, {“type”: “number”, “value”: projRating, “onChange”: setProjRating, “step”: “0.01”, “min”: 1, “max”: 10}))), React.createElement(“div”, null, React.createElement(Lbl, null, “DEKU DEALS LINK (optional)”), React.createElement(Inp, {“value”: dekuLink, “onChange”: setDekuLink, “placeholder”: “https://www.dekudeals.com/items/…”}))), React.createElement(“div”, {“style”: {display:“flex”,gap:8,marginTop:16,justifyContent:“flex-end”}}, React.createElement(Btn, {“onClick”: onClose, “variant”: “ghost”}, “Cancel”), React.createElement(Btn, {“onClick”: ()=>{if(!title.trim()||duplicate)return;onSave({title:title.trim(),platform,targetPrice:targetPrice?parseFloat(targetPrice):null,projGVI:projGVI?parseFloat(projGVI):null,projRating:projRating?parseFloat(projRating):null,dekuLink:dekuLink||””});onClose();}, “disabled”: !title.trim()||duplicate}, “ADD TO WISHLIST”))))
 );
 }
 
@@ -486,19 +379,7 @@ return(
 function StartedModal({game,onSave,onClose}){
 const[date,setDate]=useState(today());
 return(
-<div style={{position:“fixed”,inset:0,background:“rgba(0,0,0,0.88)”,zIndex:100,display:“flex”,alignItems:“center”,justifyContent:“center”}} onClick={onClose}>
-<div onClick={e=>e.stopPropagation()} style={{background:”#0f172a”,border:“1px solid #facc15”,borderRadius:4,padding:24,width:380,boxShadow:“0 0 50px rgba(0,0,0,0.9)”}}>
-<div style={{fontSize:9,letterSpacing:3,color:”#7c3aed”,marginBottom:6}}>WORKFLOW 4</div>
-<div style={{fontSize:14,fontWeight:700,marginBottom:4}}>{game.title}</div>
-<div style={{fontSize:11,color:”#64748b”,marginBottom:16}}>Mark as In Progress</div>
-<Lbl>DATE STARTED</Lbl>
-<Inp value={date} onChange={setDate} placeholder="M/D/YYYY"/>
-<div style={{display:“flex”,gap:8,marginTop:16,justifyContent:“flex-end”}}>
-<Btn onClick={onClose} variant="ghost">Cancel</Btn>
-<Btn onClick={()=>{onSave({…game,status:“In Progress”,purchaseDate:game.purchaseDate||date});onClose();}} variant=“warn”>MARK STARTED</Btn>
-</div>
-</div>
-</div>
+React.createElement(“div”, {“style”: {position:“fixed”,inset:0,background:“rgba(0,0,0,0.88)”,zIndex:100,display:“flex”,alignItems:“center”,justifyContent:“center”}, “onClick”: onClose}, React.createElement(“div”, {“onClick”: e=>e.stopPropagation(), “style”: {background:”#0f172a”,border:“1px solid #facc15”,borderRadius:4,padding:24,width:380,boxShadow:“0 0 50px rgba(0,0,0,0.9)”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:3,color:”#7c3aed”,marginBottom:6}}, “WORKFLOW 4”), React.createElement(“div”, {“style”: {fontSize:14,fontWeight:700,marginBottom:4}}, game.title), React.createElement(“div”, {“style”: {fontSize:11,color:”#64748b”,marginBottom:16}}, “Mark as In Progress”), React.createElement(Lbl, null, “DATE STARTED”), React.createElement(Inp, {“value”: date, “onChange”: setDate, “placeholder”: “M/D/YYYY”}), React.createElement(“div”, {“style”: {display:“flex”,gap:8,marginTop:16,justifyContent:“flex-end”}}, React.createElement(Btn, {“onClick”: onClose, “variant”: “ghost”}, “Cancel”), React.createElement(Btn, {“onClick”: ()=>{onSave({…game,status:“In Progress”,purchaseDate:game.purchaseDate||date});onClose();}, “variant”: “warn”}, “MARK STARTED”))))
 );
 }
 
@@ -555,58 +436,17 @@ onClose();
 };
 
 return(
-<div style={{position:“fixed”,inset:0,background:“rgba(0,0,0,0.88)”,zIndex:100,display:“flex”,alignItems:“center”,justifyContent:“center”}} onClick={onClose}>
-<div onClick={e=>e.stopPropagation()} style={{background:”#0f172a”,border:“1px solid #334155”,borderRadius:4,padding:24,width:560,maxHeight:“88vh”,overflowY:“auto”,boxShadow:“0 0 50px rgba(0,0,0,0.9)”}}>
-<div style={{display:“flex”,justifyContent:“space-between”,marginBottom:16}}>
-<div><div style={{fontSize:9,letterSpacing:3,color:”#7c3aed”,marginBottom:2}}>WORKFLOW 1</div><div style={{fontSize:14,fontWeight:700}}>SYNC FROM DEKU DEALS</div></div>
-<button onClick={onClose} style={{background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:20}}>×</button>
-</div>
-
-```
-    <div style={{fontSize:10,color:"#64748b",fontFamily:"monospace",marginBottom:12}}>URL: <span style={{color:"#475569"}}>{DEKU_URL}</span></div>
-
-    <div style={{display:"flex",gap:8,marginBottom:16}}>
-      <Btn onClick={doSync} disabled={syncing} variant="primary">{syncing?"FETCHING...":"TRY LIVE FETCH"}</Btn>
-    </div>
-
-    {error&&(
-      <div style={{background:"rgba(248,113,113,0.08)",border:"1px solid #f8717144",borderRadius:3,padding:12,fontSize:11,color:"#f87171",marginBottom:16,fontFamily:"monospace"}}>{error}</div>
-    )}
-
-    {result&&!result.newItems&&(
-      <div style={{color:"#f87171",fontSize:11,marginBottom:12}}>No valid items found in response.</div>
-    )}
-
-    {result?.newItems&&(
-      <div style={{marginBottom:16}}>
-        <div style={{fontSize:11,color:"#4ade80",marginBottom:8,fontFamily:"monospace"}}>{result.newItems.length} new {result.newItems.length===1?"item":"items"} found (out of {result.total} total)</div>
-        {result.newItems.length>0?(
-          <>
-            <div style={{maxHeight:160,overflowY:"auto",background:"#060e1e",borderRadius:3,padding:8,marginBottom:8}}>
-              {result.newItems.map((item,i)=><div key={i} style={{fontSize:11,color:"#94a3b8",fontFamily:"monospace",padding:"2px 0"}}>{item.name||item.title}</div>)}
-            </div>
-            <Btn onClick={()=>confirmSync(result.newItems)} variant="success">ADD {result.newItems.length} STUBS TO WISHLIST</Btn>
-          </>
-        ):<div style={{fontSize:11,color:"#64748b"}}>Wishlist is already up to date.</div>}
-      </div>
-    )}
-
-    <Divider/>
-    <div style={{fontSize:9,letterSpacing:2,color:"#475569",marginBottom:8}}>MANUAL PASTE FALLBACK</div>
-    <div style={{fontSize:10,color:"#64748b",marginBottom:8}}>Visit <a href={DEKU_URL} target="_blank" rel="noreferrer" style={{color:"#7c3aed"}}>{DEKU_URL}</a>, copy the full JSON, paste below:</div>
-    <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)} placeholder='{"items":[...]}' style={{width:"100%",height:80,background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:8,color:"#e2e8f0",fontFamily:"monospace",fontSize:11,outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
-    {pasteResult?.error&&<div style={{color:"#f87171",fontSize:11,marginTop:4}}>{pasteResult.error}</div>}
-    {pasteResult?.newItems&&(
-      <div style={{marginTop:8}}>
-        <div style={{fontSize:11,color:"#4ade80",marginBottom:6}}>{pasteResult.newItems.length} new items found</div>
-        {pasteResult.newItems.length>0&&<Btn onClick={()=>confirmSync(pasteResult.newItems)} variant="success">ADD {pasteResult.newItems.length} STUBS</Btn>}
-      </div>
-    )}
-    {pasteText&&!pasteResult&&<div style={{marginTop:8}}><Btn onClick={parsePaste} variant="ghost">PARSE JSON</Btn></div>}
-  </div>
-</div>
-```
-
+React.createElement(“div”, {“style”: {position:“fixed”,inset:0,background:“rgba(0,0,0,0.88)”,zIndex:100,display:“flex”,alignItems:“center”,justifyContent:“center”}, “onClick”: onClose}, React.createElement(“div”, {“onClick”: e=>e.stopPropagation(), “style”: {background:”#0f172a”,border:“1px solid #334155”,borderRadius:4,padding:24,width:560,maxHeight:“88vh”,overflowY:“auto”,boxShadow:“0 0 50px rgba(0,0,0,0.9)”}}, React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“space-between”,marginBottom:16}}, React.createElement(“div”, null, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:3,color:”#7c3aed”,marginBottom:2}}, “WORKFLOW 1”), React.createElement(“div”, {“style”: {fontSize:14,fontWeight:700}}, “SYNC FROM DEKU DEALS”)), React.createElement(“button”, {“onClick”: onClose, “style”: {background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:20}}, “×”)), React.createElement(“div”, {“style”: {fontSize:10,color:”#64748b”,fontFamily:“monospace”,marginBottom:12}}, “URL:”, React.createElement(“span”, {“style”: {color:”#475569”}}, DEKU_URL)), React.createElement(“div”, {“style”: {display:“flex”,gap:8,marginBottom:16}}, React.createElement(Btn, {“onClick”: doSync, “disabled”: syncing, “variant”: “primary”}, syncing?“FETCHING…”:“TRY LIVE FETCH”)), error&&(
+React.createElement(“div”, {“style”: {background:“rgba(248,113,113,0.08)”,border:“1px solid #f8717144”,borderRadius:3,padding:12,fontSize:11,color:”#f87171”,marginBottom:16,fontFamily:“monospace”}}, error)
+), result&&!result.newItems&&(
+React.createElement(“div”, {“style”: {color:”#f87171”,fontSize:11,marginBottom:12}}, “No valid items found in response.”)
+), result?.newItems&&(
+React.createElement(“div”, {“style”: {marginBottom:16}}, React.createElement(“div”, {“style”: {fontSize:11,color:”#4ade80”,marginBottom:8,fontFamily:“monospace”}}, result.newItems.length, “new”, result.newItems.length===1?“item”:“items”, “found (out of”, result.total, “total)”), result.newItems.length>0?(
+React.createElement(React.Fragment, null, React.createElement(“div”, {“style”: {maxHeight:160,overflowY:“auto”,background:”#060e1e”,borderRadius:3,padding:8,marginBottom:8}}, result.newItems.map((item,i)=>React.createElement(“div”, {“key”: i, “style”: {fontSize:11,color:”#94a3b8”,fontFamily:“monospace”,padding:“2px 0”}}, item.name||item.title))), React.createElement(Btn, {“onClick”: ()=>confirmSync(result.newItems), “variant”: “success”}, “ADD”, result.newItems.length, “STUBS TO WISHLIST”))
+):React.createElement(“div”, {“style”: {fontSize:11,color:”#64748b”}}, “Wishlist is already up to date.”))
+), React.createElement(Divider, null), React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:2,color:”#475569”,marginBottom:8}}, “MANUAL PASTE FALLBACK”), React.createElement(“div”, {“style”: {fontSize:10,color:”#64748b”,marginBottom:8}}, “Visit”, React.createElement(“a”, {“href”: DEKU_URL, “target”: “_blank”, “rel”: “noreferrer”, “style”: {color:”#7c3aed”}}, DEKU_URL), “, copy the full JSON, paste below:”), React.createElement(“textarea”, {“value”: pasteText, “onChange”: e=>setPasteText(e.target.value), “placeholder”: “{items:[…]}”, “style”: {width:“100%”,height:80,background:”#1e293b”,border:“1px solid #334155”,borderRadius:3,padding:8,color:”#e2e8f0”,fontFamily:“monospace”,fontSize:11,outline:“none”,resize:“vertical”,boxSizing:“border-box”}}), pasteResult?.error&&React.createElement(“div”, {“style”: {color:”#f87171”,fontSize:11,marginTop:4}}, pasteResult.error), pasteResult?.newItems&&(
+React.createElement(“div”, {“style”: {marginTop:8}}, React.createElement(“div”, {“style”: {fontSize:11,color:”#4ade80”,marginBottom:6}}, pasteResult.newItems.length, “new items found”), pasteResult.newItems.length>0&&React.createElement(Btn, {“onClick”: ()=>confirmSync(pasteResult.newItems), “variant”: “success”}, “ADD”, pasteResult.newItems.length, “STUBS”))
+), pasteText&&!pasteResult&&React.createElement(“div”, {“style”: {marginTop:8}}, React.createElement(Btn, {“onClick”: parsePaste, “variant”: “ghost”}, “PARSE JSON”))))
 );
 }
 
@@ -615,48 +455,15 @@ function OwnedDetail({g,onClose,onScore,onStart}){
 const canScore=g.status===“In Progress”||g.status===“Completed”||g.status===“Abandoned”;
 const canStart=g.status===“Not Started”;
 return(
-<div style={{marginTop:14,background:”#0a1628”,border:“1px solid #334155”,borderRadius:4,padding:18,animation:“fadeIn 0.2s ease”}}>
-<div style={{display:“flex”,justifyContent:“space-between”,alignItems:“flex-start”,marginBottom:14}}>
-<div>
-<div style={{fontSize:15,fontWeight:700,color:”#f1f5f9”,marginBottom:5}}>{g.title}</div>
-<div style={{display:“flex”,gap:6,flexWrap:“wrap”}}>
-<Tag color={STATUS_COLORS[g.status]} bg={STATUS_BG[g.status]}>{(g.status||””).toUpperCase()}</Tag>
-<Tag>{g.platform}</Tag>
-{g.completionDate&&<Tag color="#64748b">COMPLETED {g.completionDate}</Tag>}
-</div>
-</div>
-<div style={{display:“flex”,gap:6,alignItems:“center”,flexWrap:“wrap”}}>
-{canStart&&<Btn onClick={onStart} variant="warn" size="sm">I STARTED THIS</Btn>}
-{canScore&&<Btn onClick={onScore} variant="primary" size="sm">SCORE / UPDATE</Btn>}
-<button onClick={onClose} style={{background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:18}}>×</button>
-</div>
-</div>
-<div style={{display:“grid”,gridTemplateColumns:“repeat(5,1fr)”,gap:10,marginBottom:14}}>
-{[[“PRICE”,”$”+(g.price?.toFixed(2)??”—”)],[“HRS PLAYED”,g.hoursPlayed??0],[“EST HRS”,g.estHours??”—”],[“DIFFICULTY”,g.difficulty??”—”],[“GVI Δ”,{val:g.gviDelta,color:g.gviDelta==null?”#475569”:g.gviDelta>=0?”#4ade80”:”#f87171”}]].map(([l,v])=>(
-<div key={l}><div style={{fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:3}}>{l}</div><div style={{fontSize:15,fontWeight:700,color:typeof v===“object”?v.color:”#94a3b8”}}>{typeof v===“object”?fmtDelta(v.val):v}</div></div>
-))}
-</div>
-{g.gameplay!=null&&(
-<div style={{marginBottom:14}}>
-<div style={{fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:8}}>COMPONENT SCORES</div>
-<div style={{display:“grid”,gridTemplateColumns:“repeat(5,1fr)”,gap:10}}>
-{[[“GAMEPLAY”,g.gameplay],[“STORY”,g.story],[“ART”,g.art],[“MUSIC/SND”,g.musicSound],[“REPLAY”,g.replay]].map(([l,v])=>(
-<div key={l}><div style={{fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:3}}>{l}</div><RatingBar v={v}/></div>
-))}
-</div>
-</div>
-)}
-<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12}}>
-{[[“PROJECTED GVI”,g.projGVI,false],[“ACTUAL GVI”,g.actualGVI,true]].map(([l,v,hi])=>(
-<div key={l} style={{background:”#060e1e”,border:`1px solid ${hi&&v?gviColor(v)+"44":"#1e293b"}`,borderRadius:3,padding:“10px 14px”}}>
-<div style={{fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:4}}>{l}</div>
-<div style={{fontSize:26,fontWeight:700,color:gviColor(v)}}>{gviLabel(v)}</div>
-{v!=null&&<div style={{fontSize:9,letterSpacing:1.5,color:gviColor(v)+“99”,marginTop:2}}>{v>=0.9?“EXCEPTIONAL”:v>=0.8?“STRONG VALUE”:v>=0.7?“GOOD VALUE”:v>=0.6?“ACCEPTABLE”:“POOR VALUE”}</div>}
-</div>
-))}
-</div>
-{g.notes&&<div style={{marginTop:10,padding:“8px 10px”,background:”#060e1e”,borderRadius:3,border:“1px solid #1e293b”,fontSize:11,color:”#64748b”,fontStyle:“italic”}}>{g.notes}</div>}
-</div>
+React.createElement(“div”, {“style”: {marginTop:14,background:”#0a1628”,border:“1px solid #334155”,borderRadius:4,padding:18,animation:“fadeIn 0.2s ease”}}, React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“space-between”,alignItems:“flex-start”,marginBottom:14}}, React.createElement(“div”, null, React.createElement(“div”, {“style”: {fontSize:15,fontWeight:700,color:”#f1f5f9”,marginBottom:5}}, g.title), React.createElement(“div”, {“style”: {display:“flex”,gap:6,flexWrap:“wrap”}}, React.createElement(Tag, {“color”: STATUS_COLORS[g.status], “bg”: STATUS_BG[g.status]}, (g.status||””).toUpperCase()), React.createElement(Tag, null, g.platform), g.completionDate&&React.createElement(Tag, {“color”: “#64748b”}, “COMPLETED”, g.completionDate))), React.createElement(“div”, {“style”: {display:“flex”,gap:6,alignItems:“center”,flexWrap:“wrap”}}, canStart&&React.createElement(Btn, {“onClick”: onStart, “variant”: “warn”, “size”: “sm”}, “I STARTED THIS”), canScore&&React.createElement(Btn, {“onClick”: onScore, “variant”: “primary”, “size”: “sm”}, “SCORE / UPDATE”), React.createElement(“button”, {“onClick”: onClose, “style”: {background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:18}}, “×”))), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“repeat(5,1fr)”,gap:10,marginBottom:14}}, [[“PRICE”,”$”+(g.price?.toFixed(2)??”—”)],[“HRS PLAYED”,g.hoursPlayed??0],[“EST HRS”,g.estHours??”—”],[“DIFFICULTY”,g.difficulty??”—”],[“GVI Δ”,{val:g.gviDelta,color:g.gviDelta==null?”#475569”:g.gviDelta>=0?”#4ade80”:”#f87171”}]].map(([l,v])=>(
+React.createElement(“div”, {“key”: l}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:3}}, l), React.createElement(“div”, {“style”: {fontSize:15,fontWeight:700,color:typeof v===“object”?v.color:”#94a3b8”}}, typeof v===“object”?fmtDelta(v.val):v))
+))), g.gameplay!=null&&(
+React.createElement(“div”, {“style”: {marginBottom:14}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:8}}, “COMPONENT SCORES”), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“repeat(5,1fr)”,gap:10}}, [[“GAMEPLAY”,g.gameplay],[“STORY”,g.story],[“ART”,g.art],[“MUSIC/SND”,g.musicSound],[“REPLAY”,g.replay]].map(([l,v])=>(
+React.createElement(“div”, {“key”: l}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:3}}, l), React.createElement(RatingBar, {“v”: v}))
+))))
+), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12}}, [[“PROJECTED GVI”,g.projGVI,false],[“ACTUAL GVI”,g.actualGVI,true]].map(([l,v,hi])=>(
+React.createElement(“div”, {“key”: l, “style”: {background:”#060e1e”,border:`1px solid ${hi&&v?gviColor(v)+"44":"#1e293b"}`,borderRadius:3,padding:“10px 14px”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:4}}, l), React.createElement(“div”, {“style”: {fontSize:26,fontWeight:700,color:gviColor(v)}}, gviLabel(v)), v!=null&&React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:gviColor(v)+“99”,marginTop:2}}, v>=0.9?“EXCEPTIONAL”:v>=0.8?“STRONG VALUE”:v>=0.7?“GOOD VALUE”:v>=0.6?“ACCEPTABLE”:“POOR VALUE”))
+))), g.notes&&React.createElement(“div”, {“style”: {marginTop:10,padding:“8px 10px”,background:”#060e1e”,borderRadius:3,border:“1px solid #1e293b”,fontSize:11,color:”#64748b”,fontStyle:“italic”}}, g.notes))
 );
 }
 
@@ -846,147 +653,28 @@ copyNote: fullNote, // passed back for display only, not persisted
 }
 
 return(
-<div style={{position:“fixed”,inset:0,background:“rgba(6,14,30,0.92)”,zIndex:200,display:“flex”,alignItems:“center”,justifyContent:“center”,padding:16}}>
-<div style={{background:”#0a1628”,border:“1px solid #7c3aed44”,borderRadius:6,padding:24,width:“100%”,maxWidth:640,maxHeight:“90vh”,overflowY:“auto”,boxShadow:“0 0 40px #7c3aed22”,animation:“fadeIn 0.2s ease”}}>
-
-```
-    {/* Header */}
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18}}>
-      <div>
-        <div style={{fontSize:9,letterSpacing:3,color:"#7c3aed",marginBottom:3}}>CLAUDE PROJECTION</div>
-        <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9",marginBottom:4}}>{game.title}</div>
-        {game.dekuLink&&<a href={game.dekuLink} target="_blank" rel="noreferrer" style={{fontSize:10,color:"#7c3aed",fontFamily:"monospace",letterSpacing:1,textDecoration:"none"}}>VIEW ON DEKU DEALS ↗</a>}
-      </div>
-      <button onClick={onClose} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:20,lineHeight:1}}>×</button>
-    </div>
-
-    {step==="input"&&(
-      <>
-        {/* Existing note preview */}
-        {game.notes&&(
-          <div style={{marginBottom:16,padding:"10px 12px",background:"#060e1e",borderRadius:3,border:"1px solid #1e293b"}}>
-            <div style={{fontSize:9,letterSpacing:1.5,color:"#475569",marginBottom:5}}>EXISTING NOTE</div>
-            <div style={{fontSize:11,color:"#64748b",fontStyle:"italic",lineHeight:1.5,maxHeight:80,overflowY:"auto"}}>{game.notes}</div>
-            {game.projRating&&<div style={{marginTop:6,fontSize:10,color:"#4ade80",letterSpacing:1}}>✓ HAS PROJECTED RATING {game.projRating.toFixed(2)} — will extract, not regenerate</div>}
-            {!game.projRating&&<div style={{marginTop:6,fontSize:10,color:"#fb923c",letterSpacing:1}}>⚠ NO PROJECTED RATING — will generate fresh projection</div>}
-          </div>
-        )}
-        {!game.notes&&(
-          <div style={{marginBottom:16,padding:"8px 12px",background:"#060e1e",borderRadius:3,border:"1px solid #334155",fontSize:10,color:"#475569"}}>
-            No existing note — fresh projection will be generated.
-          </div>
-        )}
-
-        {/* Inputs */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
-          <div>
-            <Lbl>ATL PRICE (USD)</Lbl>
-            <Inp value={atlPrice} onChange={setAtlPrice} type="number" min="0" step="0.01" placeholder="e.g. 9.99"/>
-            <div style={{fontSize:9,color:"#334155",marginTop:3}}>Used for GVI price component</div>
-          </div>
-          <div>
-            <Lbl>HLTB BASE HOURS (pre-inflation)</Lbl>
-            <Inp value={hltbHours} onChange={setHltbHours} type="number" min="1" step="1" placeholder="e.g. 25"/>
-            <div style={{fontSize:9,color:"#475569",marginTop:3}}>
-              {inflatedHours?<>Est {inflatedHours.toFixed(1)}h inflated → <span style={{color:"#a78bfa"}}>{hoursBandLabel(inflatedHours)}</span></>:"Enter hours to see band"}
-            </div>
-          </div>
-        </div>
-
-        {error&&<div style={{marginBottom:12,padding:"8px 10px",background:"rgba(248,113,113,0.1)",border:"1px solid #f87171",borderRadius:3,fontSize:11,color:"#f87171"}}>{error}</div>}
-
-        <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
-          <Btn variant="ghost" onClick={onClose}>CANCEL</Btn>
-          <Btn variant="primary" onClick={runProjection} disabled={loading}>
-            {loading?"GENERATING...":"GET PROJECTION"}
-          </Btn>
-        </div>
-      </>
-    )}
-
-    {step==="result"&&result&&(
-      <>
-        {/* Key numbers */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
-          {[
-            ["PROJ RATING",result.projectedRating?.toFixed(2),gviColor(result.projectedRating/10)],
-            ["PROJ GVI",result.projGVI?.toFixed(3),gviColor(result.projGVI)],
-            ["TARGET PRICE","$"+result.atlPrice?.toFixed(2),"#94a3b8"],
-          ].map(([l,v,c])=>(
-            <div key={l} style={{background:"#060e1e",border:`1px solid ${c}33`,borderRadius:3,padding:"10px 14px",textAlign:"center"}}>
-              <div style={{fontSize:9,letterSpacing:1.5,color:"#475569",marginBottom:4}}>{l}</div>
-              <div style={{fontSize:22,fontWeight:700,color:c}}>{v}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-          <div style={{background:"#060e1e",borderRadius:3,padding:"8px 12px"}}>
-            <div style={{fontSize:9,letterSpacing:1.5,color:"#475569",marginBottom:3}}>PLATFORM</div>
-            <div style={{fontFamily:"monospace",fontSize:12,color:"#94a3b8"}}>{result.platform}</div>
-          </div>
-          <div style={{background:"#060e1e",borderRadius:3,padding:"8px 12px"}}>
-            <div style={{fontSize:9,letterSpacing:1.5,color:"#475569",marginBottom:3}}>WISHLIST REC</div>
-            <div style={{fontFamily:"monospace",fontSize:12,color:result.wishlistRec==="Pass"?"#f87171":result.wishlistRec==="Keep"?"#4ade80":"#a78bfa"}}>{result.wishlistRec}</div>
-          </div>
-        </div>
-
-        {/* Full note — copy before saving */}
-        <div style={{marginBottom:18,padding:"12px 14px",background:"#060e1e",border:"1px solid #334155",borderRadius:3}}>
-          <div style={{fontSize:9,letterSpacing:1.5,color:"#475569",marginBottom:6}}>FULL NOTE</div>
-          <pre style={{fontSize:11,color:"#64748b",lineHeight:1.6,whiteSpace:"pre-wrap",fontFamily:"monospace",margin:0}}>
-            {result.formattedNote.replace("GVI Projection: [auto-calculated by UI]",`GVI Projection: ${result.projGVI.toFixed(3)}`)}
-          </pre>
-        </div>
-
-        <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
-          <Btn variant="ghost" onClick={()=>setStep("input")}>← REVISE INPUTS</Btn>
-          <div style={{display:"flex",gap:8}}>
-            <Btn variant="ghost" onClick={onClose}>DISCARD</Btn>
-            <Btn variant="success" onClick={handleConfirm}>SAVE TO WISHLIST</Btn>
-          </div>
-        </div>
-      </>
-    )}
-  </div>
-</div>
-```
-
+React.createElement(“div”, {“style”: {position:“fixed”,inset:0,background:“rgba(6,14,30,0.92)”,zIndex:200,display:“flex”,alignItems:“center”,justifyContent:“center”,padding:16}}, React.createElement(“div”, {“style”: {background:”#0a1628”,border:“1px solid #7c3aed44”,borderRadius:6,padding:24,width:“100%”,maxWidth:640,maxHeight:“90vh”,overflowY:“auto”,boxShadow:“0 0 40px #7c3aed22”,animation:“fadeIn 0.2s ease”}}, React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“space-between”,alignItems:“flex-start”,marginBottom:18}}, React.createElement(“div”, null, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:3,color:”#7c3aed”,marginBottom:3}}, “CLAUDE PROJECTION”), React.createElement(“div”, {“style”: {fontSize:15,fontWeight:700,color:”#f1f5f9”,marginBottom:4}}, game.title), game.dekuLink&&React.createElement(“a”, {“href”: game.dekuLink, “target”: “_blank”, “rel”: “noreferrer”, “style”: {fontSize:10,color:”#7c3aed”,fontFamily:“monospace”,letterSpacing:1,textDecoration:“none”}}, “VIEW ON DEKU DEALS ↗”)), React.createElement(“button”, {“onClick”: onClose, “style”: {background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:20,lineHeight:1}}, “×”)), step===“input”&&(
+React.createElement(React.Fragment, null, game.notes&&(
+React.createElement(“div”, {“style”: {marginBottom:16,padding:“10px 12px”,background:”#060e1e”,borderRadius:3,border:“1px solid #1e293b”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:5}}, “EXISTING NOTE”), React.createElement(“div”, {“style”: {fontSize:11,color:”#64748b”,fontStyle:“italic”,lineHeight:1.5,maxHeight:80,overflowY:“auto”}}, game.notes), game.projRating&&React.createElement(“div”, {“style”: {marginTop:6,fontSize:10,color:”#4ade80”,letterSpacing:1}}, “✓ HAS PROJECTED RATING”, game.projRating.toFixed(2), “— will extract, not regenerate”), !game.projRating&&React.createElement(“div”, {“style”: {marginTop:6,fontSize:10,color:”#fb923c”,letterSpacing:1}}, “⚠ NO PROJECTED RATING — will generate fresh projection”))
+), !game.notes&&(
+React.createElement(“div”, {“style”: {marginBottom:16,padding:“8px 12px”,background:”#060e1e”,borderRadius:3,border:“1px solid #334155”,fontSize:10,color:”#475569”}}, “No existing note — fresh projection will be generated.”)
+), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:14,marginBottom:16}}, React.createElement(“div”, null, React.createElement(Lbl, null, “ATL PRICE (USD)”), React.createElement(Inp, {“value”: atlPrice, “onChange”: setAtlPrice, “type”: “number”, “min”: “0”, “step”: “0.01”, “placeholder”: “e.g. 9.99”}), React.createElement(“div”, {“style”: {fontSize:9,color:”#334155”,marginTop:3}}, “Used for GVI price component”)), React.createElement(“div”, null, React.createElement(Lbl, null, “HLTB BASE HOURS (pre-inflation)”), React.createElement(Inp, {“value”: hltbHours, “onChange”: setHltbHours, “type”: “number”, “min”: “1”, “step”: “1”, “placeholder”: “e.g. 25”}), React.createElement(“div”, {“style”: {fontSize:9,color:”#475569”,marginTop:3}}, inflatedHours?React.createElement(React.Fragment, null, “Est”, inflatedHours.toFixed(1), “h inflated →”, React.createElement(“span”, {“style”: {color:”#a78bfa”}}, hoursBandLabel(inflatedHours))):“Enter hours to see band”))), error&&React.createElement(“div”, {“style”: {marginBottom:12,padding:“8px 10px”,background:“rgba(248,113,113,0.1)”,border:“1px solid #f87171”,borderRadius:3,fontSize:11,color:”#f87171”}}, error), React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“flex-end”,gap:8}}, React.createElement(Btn, {“variant”: “ghost”, “onClick”: onClose}, “CANCEL”), React.createElement(Btn, {“variant”: “primary”, “onClick”: runProjection, “disabled”: loading}, loading?“GENERATING…”:“GET PROJECTION”)))
+), step===“result”&&result&&(
+React.createElement(React.Fragment, null, React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“repeat(3,1fr)”,gap:12,marginBottom:16}}, [
+[“PROJ RATING”,result.projectedRating?.toFixed(2),gviColor(result.projectedRating/10)],
+[“PROJ GVI”,result.projGVI?.toFixed(3),gviColor(result.projGVI)],
+[“TARGET PRICE”,”$”+result.atlPrice?.toFixed(2),”#94a3b8”],
+].map(([l,v,c])=>(
+React.createElement(“div”, {“key”: l, “style”: {background:”#060e1e”,border:`1px solid ${c}33`,borderRadius:3,padding:“10px 14px”,textAlign:“center”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:4}}, l), React.createElement(“div”, {“style”: {fontSize:22,fontWeight:700,color:c}}, v))
+))), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12,marginBottom:16}}, React.createElement(“div”, {“style”: {background:”#060e1e”,borderRadius:3,padding:“8px 12px”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:3}}, “PLATFORM”), React.createElement(“div”, {“style”: {fontFamily:“monospace”,fontSize:12,color:”#94a3b8”}}, result.platform)), React.createElement(“div”, {“style”: {background:”#060e1e”,borderRadius:3,padding:“8px 12px”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:3}}, “WISHLIST REC”), React.createElement(“div”, {“style”: {fontFamily:“monospace”,fontSize:12,color:result.wishlistRec===“Pass”?”#f87171”:result.wishlistRec===“Keep”?”#4ade80”:”#a78bfa”}}, result.wishlistRec))), React.createElement(“div”, {“style”: {marginBottom:18,padding:“12px 14px”,background:”#060e1e”,border:“1px solid #334155”,borderRadius:3}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:6}}, “FULL NOTE”), React.createElement(“pre”, {“style”: {fontSize:11,color:”#64748b”,lineHeight:1.6,whiteSpace:“pre-wrap”,fontFamily:“monospace”,margin:0}}, result.formattedNote.replace(“GVI Projection: [auto-calculated by UI]”,`GVI Projection: ${result.projGVI.toFixed(3)}`))), React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“space-between”,gap:8}}, React.createElement(Btn, {“variant”: “ghost”, “onClick”: ()=>setStep(“input”)}, “← REVISE INPUTS”), React.createElement(“div”, {“style”: {display:“flex”,gap:8}}, React.createElement(Btn, {“variant”: “ghost”, “onClick”: onClose}, “DISCARD”), React.createElement(Btn, {“variant”: “success”, “onClick”: handleConfirm}, “SAVE TO WISHLIST”))))
+)))
 );
 }
 
 // ─── WISHLIST DETAIL ──────────────────────────────────────────────────────────
 function WishlistDetail({g,onClose,onBuy,onProject}){
 return(
-<div style={{marginTop:14,background:”#0a1628”,border:“1px solid #334155”,borderRadius:4,padding:18,animation:“fadeIn 0.2s ease”}}>
-<div style={{display:“flex”,justifyContent:“space-between”,alignItems:“flex-start”,marginBottom:14}}>
-<div>
-<div style={{fontSize:15,fontWeight:700,color:”#f1f5f9”,marginBottom:5}}>{g.title}</div>
-<div style={{display:“flex”,gap:6}}>
-<Tag>{g.platform||“Platform TBD”}</Tag>
-<Tag color="#facc15">TARGET: ${g.targetPrice?.toFixed(2)??”—”}</Tag>
-{g.isStub&&<Tag color="#fb923c">STUB — NEEDS NOTE</Tag>}
-</div>
-</div>
-<div style={{display:“flex”,gap:6,flexWrap:“wrap”,alignItems:“center”}}>
-<Btn onClick={()=>onProject(g)} size=“sm” variant=“warn”>✦ GET PROJECTION</Btn>
-<Btn onClick={()=>onBuy(g)} size=“sm” variant=“success”>I BOUGHT THIS</Btn>
-<button onClick={onClose} style={{background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:18}}>×</button>
-</div>
-</div>
-<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12}}>
-<div style={{background:”#060e1e”,border:`1px solid ${gviColor(g.projGVI)+"44"}`,borderRadius:3,padding:“10px 14px”}}>
-<div style={{fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:4}}>PROJECTED GVI</div>
-<div style={{fontSize:26,fontWeight:700,color:gviColor(g.projGVI)}}>{gviLabel(g.projGVI)}</div>
-{g.projGVI&&<div style={{fontSize:9,letterSpacing:1.5,color:gviColor(g.projGVI)+“99”,marginTop:2}}>{g.projGVI>=0.8?“STRONG VALUE”:g.projGVI>=0.7?“GOOD VALUE”:g.projGVI>=0.6?“ACCEPTABLE”:“OPPORTUNISTIC”}</div>}
-</div>
-<div style={{background:”#060e1e”,border:“1px solid #1e293b”,borderRadius:3,padding:“10px 14px”}}>
-<div style={{fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:4}}>PROJECTED RATING</div>
-{g.projRating?<><div style={{fontSize:26,fontWeight:700,color:gviColor(g.projRating/10)}}>{g.projRating.toFixed(2)}</div><RatingBar v={g.projRating}/></>:<div style={{fontSize:13,color:”#334155”}}>No projection yet</div>}
-</div>
-</div>
-{g.dekuLink&&<div style={{marginTop:10}}><a href={g.dekuLink} target=”_blank” rel=“noreferrer” style={{color:”#7c3aed”,fontSize:11,fontFamily:“monospace”,letterSpacing:1}}>VIEW ON DEKU DEALS ↗</a></div>}
-{g.notes&&<div style={{marginTop:10,padding:“10px 12px”,background:”#060e1e”,borderRadius:3,border:“1px solid #1e293b”,fontSize:11,color:”#64748b”,fontStyle:“italic”,lineHeight:1.5,maxHeight:160,overflowY:“auto”}}>{g.notes}</div>}
-</div>
+React.createElement(“div”, {“style”: {marginTop:14,background:”#0a1628”,border:“1px solid #334155”,borderRadius:4,padding:18,animation:“fadeIn 0.2s ease”}}, React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“space-between”,alignItems:“flex-start”,marginBottom:14}}, React.createElement(“div”, null, React.createElement(“div”, {“style”: {fontSize:15,fontWeight:700,color:”#f1f5f9”,marginBottom:5}}, g.title), React.createElement(“div”, {“style”: {display:“flex”,gap:6}}, React.createElement(Tag, null, g.platform||“Platform TBD”), React.createElement(Tag, {“color”: “#facc15”}, “TARGET: $”, g.targetPrice?.toFixed(2)??”—”), g.isStub&&React.createElement(Tag, {“color”: “#fb923c”}, “STUB — NEEDS NOTE”))), React.createElement(“div”, {“style”: {display:“flex”,gap:6,flexWrap:“wrap”,alignItems:“center”}}, React.createElement(Btn, {“onClick”: ()=>onProject(g), “size”: “sm”, “variant”: “warn”}, “✦ GET PROJECTION”), React.createElement(Btn, {“onClick”: ()=>onBuy(g), “size”: “sm”, “variant”: “success”}, “I BOUGHT THIS”), React.createElement(“button”, {“onClick”: onClose, “style”: {background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:18}}, “×”))), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12}}, React.createElement(“div”, {“style”: {background:”#060e1e”,border:`1px solid ${gviColor(g.projGVI)+"44"}`,borderRadius:3,padding:“10px 14px”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:4}}, “PROJECTED GVI”), React.createElement(“div”, {“style”: {fontSize:26,fontWeight:700,color:gviColor(g.projGVI)}}, gviLabel(g.projGVI)), g.projGVI&&React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:gviColor(g.projGVI)+“99”,marginTop:2}}, g.projGVI>=0.8?“STRONG VALUE”:g.projGVI>=0.7?“GOOD VALUE”:g.projGVI>=0.6?“ACCEPTABLE”:“OPPORTUNISTIC”)), React.createElement(“div”, {“style”: {background:”#060e1e”,border:“1px solid #1e293b”,borderRadius:3,padding:“10px 14px”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:4}}, “PROJECTED RATING”), g.projRating?React.createElement(React.Fragment, null, React.createElement(“div”, {“style”: {fontSize:26,fontWeight:700,color:gviColor(g.projRating/10)}}, g.projRating.toFixed(2)), React.createElement(RatingBar, {“v”: g.projRating})):React.createElement(“div”, {“style”: {fontSize:13,color:”#334155”}}, “No projection yet”))), g.dekuLink&&React.createElement(“div”, {“style”: {marginTop:10}}, React.createElement(“a”, {“href”: g.dekuLink, “target”: “_blank”, “rel”: “noreferrer”, “style”: {color:”#7c3aed”,fontSize:11,fontFamily:“monospace”,letterSpacing:1}}, “VIEW ON DEKU DEALS ↗”)), g.notes&&React.createElement(“div”, {“style”: {marginTop:10,padding:“10px 12px”,background:”#060e1e”,borderRadius:3,border:“1px solid #1e293b”,fontSize:11,color:”#64748b”,fontStyle:“italic”,lineHeight:1.5,maxHeight:160,overflowY:“auto”}}, g.notes))
 );
 }
 
@@ -1013,34 +701,9 @@ return sortDir===“asc”?va-vb:vb-va;
 const COLS=[[“TITLE”,“title”,220],[“STATUS”,“status”,110],[“PLATFORM”,“platform”,100],[“PROJ GVI”,“projGVI”,80],[“ACTUAL GVI”,“actualGVI”,92],[“Δ GVI”,“gviDelta”,68],[“RATING”,“personalRating”,160]];
 
 return(
-<div>
-<div style={{display:“flex”,gap:8,marginBottom:10,flexWrap:“wrap”,alignItems:“center”}}>
-<input value={search} onChange={e=>setSearch(e.target.value)} placeholder=“Search…” style={{…S.input,width:180,padding:“5px 8px”}}/>
-<Chips options={[“All”,“In Progress”,“Not Started”,“Completed”,“Abandoned”]} active={filterStatus} onChange={setFilterStatus}/>
-<Chips options={[“All”,“PS5”,“PS4”,“Switch 2”,“Switch”,“Steam”,“SNES”]} active={filterPlatform} onChange={setFilterPlatform}/>
-</div>
-<div style={{fontSize:9,letterSpacing:2,color:”#334155”,marginBottom:6}}>{filtered.length} / {games.length} ENTRIES</div>
-<div style={{overflowX:“auto”,background:”#0a1628”,border:“1px solid #1e293b”,borderRadius:4}}>
-<table style={{width:“100%”,borderCollapse:“collapse”,minWidth:700}}>
-<thead><tr style={{borderBottom:“1px solid #1e293b”}}>
-{COLS.map(([l,k,w])=><th key={k} onClick={()=>toggleSort(k)} style={{padding:“7px 12px”,textAlign:“left”,width:w,fontSize:9,letterSpacing:2,color:sortKey===k?”#7c3aed”:”#475569”,cursor:“pointer”,userSelect:“none”,fontWeight:700}}>{l}{sortKey===k?(sortDir===“asc”?” ↑”:” ↓”):””}</th>)}
-</tr></thead>
-<tbody>
-{filtered.map((g,i)=>(
-<tr key={i} onClick={()=>onSelect(selected?.title===g.title?null:g)} style={{cursor:“pointer”,background:selected?.title===g.title?“rgba(124,58,237,0.08)”:“transparent”}}>
-<td style={{padding:“8px 12px”,fontSize:12,color:”#cbd5e1”,borderBottom:“1px solid #0f172a”,maxWidth:220,overflow:“hidden”,textOverflow:“ellipsis”,whiteSpace:“nowrap”}}>{g.title}</td>
-<td style={{padding:“8px 12px”,borderBottom:“1px solid #0f172a”}}><Tag color={STATUS_COLORS[g.status]} bg={STATUS_BG[g.status]}>{(g.status||””).toUpperCase()}</Tag></td>
-<td style={{padding:“8px 12px”,fontSize:11,color:”#64748b”,borderBottom:“1px solid #0f172a”}}>{g.platform}</td>
-<td style={{padding:“8px 12px”,fontFamily:“monospace”,fontSize:11,color:gviColor(g.projGVI),borderBottom:“1px solid #0f172a”}}>{gviLabel(g.projGVI)}</td>
-<td style={{padding:“8px 12px”,fontFamily:“monospace”,fontSize:13,fontWeight:700,color:gviColor(g.actualGVI),borderBottom:“1px solid #0f172a”}}>{gviLabel(g.actualGVI)}</td>
-<td style={{padding:“8px 12px”,fontFamily:“monospace”,fontSize:11,color:g.gviDelta==null?”#334155”:g.gviDelta>=0?”#4ade80”:”#f87171”,borderBottom:“1px solid #0f172a”}}>{fmtDelta(g.gviDelta)}</td>
-<td style={{padding:“8px 12px”,borderBottom:“1px solid #0f172a”,minWidth:150}}><RatingBar v={g.personalRating}/></td>
-</tr>
-))}
-</tbody>
-</table>
-</div>
-</div>
+React.createElement(“div”, null, React.createElement(“div”, {“style”: {display:“flex”,gap:8,marginBottom:10,flexWrap:“wrap”,alignItems:“center”}}, React.createElement(“input”, {“value”: search, “onChange”: e=>setSearch(e.target.value), “placeholder”: “Search…”, “style”: {…S.input,width:180,padding:“5px 8px”}}), React.createElement(Chips, {“options”: [“All”,“In Progress”,“Not Started”,“Completed”,“Abandoned”], “active”: filterStatus, “onChange”: setFilterStatus}), React.createElement(Chips, {“options”: [“All”,“PS5”,“PS4”,“Switch 2”,“Switch”,“Steam”,“SNES”], “active”: filterPlatform, “onChange”: setFilterPlatform})), React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:2,color:”#334155”,marginBottom:6}}, filtered.length, “/”, games.length, “ENTRIES”), React.createElement(“div”, {“style”: {overflowX:“auto”,background:”#0a1628”,border:“1px solid #1e293b”,borderRadius:4}}, React.createElement(“table”, {“style”: {width:“100%”,borderCollapse:“collapse”,minWidth:700}}, React.createElement(“thead”, null, React.createElement(“tr”, {“style”: {borderBottom:“1px solid #1e293b”}}, COLS.map(([l,k,w])=>React.createElement(“th”, {“key”: k, “onClick”: ()=>toggleSort(k), “style”: {padding:“7px 12px”,textAlign:“left”,width:w,fontSize:9,letterSpacing:2,color:sortKey===k?”#7c3aed”:”#475569”,cursor:“pointer”,userSelect:“none”,fontWeight:700}}, l, sortKey===k?(sortDir===“asc”?” ↑”:” ↓”):””)))), React.createElement(“tbody”, null, filtered.map((g,i)=>(
+React.createElement(“tr”, {“key”: i, “onClick”: ()=>onSelect(selected?.title===g.title?null:g), “style”: {cursor:“pointer”,background:selected?.title===g.title?“rgba(124,58,237,0.08)”:“transparent”}}, React.createElement(“td”, {“style”: {padding:“8px 12px”,fontSize:12,color:”#cbd5e1”,borderBottom:“1px solid #0f172a”,maxWidth:220,overflow:“hidden”,textOverflow:“ellipsis”,whiteSpace:“nowrap”}}, g.title), React.createElement(“td”, {“style”: {padding:“8px 12px”,borderBottom:“1px solid #0f172a”}}, React.createElement(Tag, {“color”: STATUS_COLORS[g.status], “bg”: STATUS_BG[g.status]}, (g.status||””).toUpperCase())), React.createElement(“td”, {“style”: {padding:“8px 12px”,fontSize:11,color:”#64748b”,borderBottom:“1px solid #0f172a”}}, g.platform), React.createElement(“td”, {“style”: {padding:“8px 12px”,fontFamily:“monospace”,fontSize:11,color:gviColor(g.projGVI),borderBottom:“1px solid #0f172a”}}, gviLabel(g.projGVI)), React.createElement(“td”, {“style”: {padding:“8px 12px”,fontFamily:“monospace”,fontSize:13,fontWeight:700,color:gviColor(g.actualGVI),borderBottom:“1px solid #0f172a”}}, gviLabel(g.actualGVI)), React.createElement(“td”, {“style”: {padding:“8px 12px”,fontFamily:“monospace”,fontSize:11,color:g.gviDelta==null?”#334155”:g.gviDelta>=0?”#4ade80”:”#f87171”,borderBottom:“1px solid #0f172a”}}, fmtDelta(g.gviDelta)), React.createElement(“td”, {“style”: {padding:“8px 12px”,borderBottom:“1px solid #0f172a”,minWidth:150}}, React.createElement(RatingBar, {“v”: g.personalRating})))
+))))))
 );
 }
 
@@ -1055,35 +718,11 @@ const filtered=items
 .filter(g=>!search||g.title.toLowerCase().includes(search.toLowerCase()))
 .sort((a,b)=>{const va=a[sortKey]??(sortDir===“desc”?-Infinity:Infinity),vb=b[sortKey]??(sortDir===“desc”?-Infinity:Infinity);if(typeof va===“string”)return sortDir===“asc”?va.localeCompare(vb):vb.localeCompare(va);return sortDir===“asc”?va-vb:vb-va;});
 return(
-<div>
-<div style={{display:“flex”,gap:8,marginBottom:10,flexWrap:“wrap”,alignItems:“center”}}>
-<input value={search} onChange={e=>setSearch(e.target.value)} placeholder=“Search…” style={{…S.input,width:180,padding:“5px 8px”}}/>
-<Chips options={[“All”,“PS5”,“PS4”,“Switch 2”,“Switch”,“Steam”]} active={filterPlatform} onChange={setFilterPlatform}/>
-</div>
-<div style={{fontSize:9,letterSpacing:2,color:”#334155”,marginBottom:6}}>{filtered.length} / {items.length} ENTRIES</div>
-<div style={{overflowX:“auto”,background:”#0a1628”,border:“1px solid #1e293b”,borderRadius:4}}>
-<table style={{width:“100%”,borderCollapse:“collapse”,minWidth:500}}>
-<thead><tr style={{borderBottom:“1px solid #1e293b”}}>
-{[[“TITLE”,“title”,220],[“PLATFORM”,“platform”,100],[“TARGET $”,“targetPrice”,90],[“PROJ GVI”,“projGVI”,90],[“PROJ RATING”,“projRating”,130]].map(([l,k,w])=>(
-<th key={k} onClick={()=>toggleSort(k)} style={{padding:“7px 12px”,textAlign:“left”,width:w,fontSize:9,letterSpacing:2,color:sortKey===k?”#7c3aed”:”#475569”,cursor:“pointer”,userSelect:“none”,fontWeight:700}}>{l}{sortKey===k?(sortDir===“asc”?” ↑”:” ↓”):””}</th>
-))}
-<th style={{width:40,padding:“7px 12px”,fontSize:9,color:”#475569”}}>LINK</th>
-</tr></thead>
-<tbody>
-{filtered.map((g,i)=>(
-<tr key={i} onClick={()=>onSelect(selected?.title===g.title?null:g)} style={{cursor:“pointer”,background:selected?.title===g.title?“rgba(124,58,237,0.08)”:“transparent”}}>
-<td style={{padding:“8px 12px”,fontSize:12,color:g.isStub?”#fb923c”:”#cbd5e1”,borderBottom:“1px solid #0f172a”,maxWidth:220,overflow:“hidden”,textOverflow:“ellipsis”,whiteSpace:“nowrap”}}>{g.title}{g.isStub?” ✦”:””}</td>
-<td style={{padding:“8px 12px”,fontSize:11,color:”#64748b”,borderBottom:“1px solid #0f172a”}}>{g.platform||”—”}</td>
-<td style={{padding:“8px 12px”,fontFamily:“monospace”,fontSize:12,color:”#94a3b8”,borderBottom:“1px solid #0f172a”}}>{g.targetPrice!=null?`$${g.targetPrice.toFixed(2)}`:”—”}</td>
-<td style={{padding:“8px 12px”,fontFamily:“monospace”,fontSize:13,fontWeight:700,color:gviColor(g.projGVI),borderBottom:“1px solid #0f172a”}}>{gviLabel(g.projGVI)}</td>
-<td style={{padding:“8px 12px”,borderBottom:“1px solid #0f172a”,minWidth:130}}><RatingBar v={g.projRating}/></td>
-<td style={{padding:“8px 12px”,borderBottom:“1px solid #0f172a”}}>{g.dekuLink&&<a href={g.dekuLink} target=”_blank” rel=“noreferrer” onClick={e=>e.stopPropagation()} style={{color:”#475569”,fontSize:12,textDecoration:“none”}}>↗</a>}</td>
-</tr>
-))}
-</tbody>
-</table>
-</div>
-</div>
+React.createElement(“div”, null, React.createElement(“div”, {“style”: {display:“flex”,gap:8,marginBottom:10,flexWrap:“wrap”,alignItems:“center”}}, React.createElement(“input”, {“value”: search, “onChange”: e=>setSearch(e.target.value), “placeholder”: “Search…”, “style”: {…S.input,width:180,padding:“5px 8px”}}), React.createElement(Chips, {“options”: [“All”,“PS5”,“PS4”,“Switch 2”,“Switch”,“Steam”], “active”: filterPlatform, “onChange”: setFilterPlatform})), React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:2,color:”#334155”,marginBottom:6}}, filtered.length, “/”, items.length, “ENTRIES”), React.createElement(“div”, {“style”: {overflowX:“auto”,background:”#0a1628”,border:“1px solid #1e293b”,borderRadius:4}}, React.createElement(“table”, {“style”: {width:“100%”,borderCollapse:“collapse”,minWidth:500}}, React.createElement(“thead”, null, React.createElement(“tr”, {“style”: {borderBottom:“1px solid #1e293b”}}, [[“TITLE”,“title”,220],[“PLATFORM”,“platform”,100],[“TARGET $”,“targetPrice”,90],[“PROJ GVI”,“projGVI”,90],[“PROJ RATING”,“projRating”,130]].map(([l,k,w])=>(
+React.createElement(“th”, {“key”: k, “onClick”: ()=>toggleSort(k), “style”: {padding:“7px 12px”,textAlign:“left”,width:w,fontSize:9,letterSpacing:2,color:sortKey===k?”#7c3aed”:”#475569”,cursor:“pointer”,userSelect:“none”,fontWeight:700}}, l, sortKey===k?(sortDir===“asc”?” ↑”:” ↓”):””)
+)), React.createElement(“th”, {“style”: {width:40,padding:“7px 12px”,fontSize:9,color:”#475569”}}, “LINK”))), React.createElement(“tbody”, null, filtered.map((g,i)=>(
+React.createElement(“tr”, {“key”: i, “onClick”: ()=>onSelect(selected?.title===g.title?null:g), “style”: {cursor:“pointer”,background:selected?.title===g.title?“rgba(124,58,237,0.08)”:“transparent”}}, React.createElement(“td”, {“style”: {padding:“8px 12px”,fontSize:12,color:g.isStub?”#fb923c”:”#cbd5e1”,borderBottom:“1px solid #0f172a”,maxWidth:220,overflow:“hidden”,textOverflow:“ellipsis”,whiteSpace:“nowrap”}}, g.title, g.isStub?” ✦”:””), React.createElement(“td”, {“style”: {padding:“8px 12px”,fontSize:11,color:”#64748b”,borderBottom:“1px solid #0f172a”}}, g.platform||”—”), React.createElement(“td”, {“style”: {padding:“8px 12px”,fontFamily:“monospace”,fontSize:12,color:”#94a3b8”,borderBottom:“1px solid #0f172a”}}, g.targetPrice!=null?`$${g.targetPrice.toFixed(2)}`:”—”), React.createElement(“td”, {“style”: {padding:“8px 12px”,fontFamily:“monospace”,fontSize:13,fontWeight:700,color:gviColor(g.projGVI),borderBottom:“1px solid #0f172a”}}, gviLabel(g.projGVI)), React.createElement(“td”, {“style”: {padding:“8px 12px”,borderBottom:“1px solid #0f172a”,minWidth:130}}, React.createElement(RatingBar, {“v”: g.projRating})), React.createElement(“td”, {“style”: {padding:“8px 12px”,borderBottom:“1px solid #0f172a”}}, g.dekuLink&&React.createElement(“a”, {“href”: g.dekuLink, “target”: “_blank”, “rel”: “noreferrer”, “onClick”: e=>e.stopPropagation(), “style”: {color:”#475569”,fontSize:12,textDecoration:“none”}}, “↗”)))
+))))))
 );
 }
 
@@ -1102,14 +741,9 @@ const stats=[
 {label:“AVG RATING”,val:avgRating?avgRating.toFixed(2):”—”,color:avgRating>=8?”#a78bfa”:”#4ade80”},
 ];
 return(
-<div style={{display:“grid”,gridTemplateColumns:“repeat(6,1fr)”,gap:10,marginBottom:16}}>
-{stats.map(({label,val,color})=>(
-<div key={label} style={{background:”#0a1628”,border:“1px solid #1e293b”,borderRadius:4,padding:“11px 13px”}}>
-<div style={{fontSize:9,letterSpacing:2,color:”#475569”,marginBottom:3}}>{label}</div>
-<div style={{fontSize:19,fontWeight:700,color}}>{val}</div>
-</div>
-))}
-</div>
+React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“repeat(6,1fr)”,gap:10,marginBottom:16}}, stats.map(({label,val,color})=>(
+React.createElement(“div”, {“key”: label, “style”: {background:”#0a1628”,border:“1px solid #1e293b”,borderRadius:4,padding:“11px 13px”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:2,color:”#475569”,marginBottom:3}}, label), React.createElement(“div”, {“style”: {fontSize:19,fontWeight:700,color}}, val))
+)))
 );
 }
 
@@ -1167,113 +801,21 @@ reader.readAsText(file);
 }
 
 return(
-<div style={{position:“fixed”,inset:0,background:“rgba(6,14,30,0.94)”,zIndex:200,display:“flex”,alignItems:“center”,justifyContent:“center”,padding:16}}>
-<div style={{background:”#0a1628”,border:“1px solid #334155”,borderRadius:6,padding:24,width:“100%”,maxWidth:560,maxHeight:“90vh”,overflowY:“auto”,animation:“fadeIn 0.2s ease”}}>
-<div style={{display:“flex”,justifyContent:“space-between”,alignItems:“center”,marginBottom:18}}>
-<div style={{fontSize:13,fontWeight:700,letterSpacing:1,color:”#f1f5f9”}}>DATA MANAGEMENT</div>
-<button onClick={onClose} style={{background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:20}}>×</button>
-</div>
-
-```
-    <TabBar
-      tabs={[{key:"export",label:"EXPORT"},{key:"import",label:"IMPORT"},{key:"reset",label:"RESET"}]}
-      active={tab}
-      onChange={setTab}
-    />
-
-    {tab==="export"&&(
-      <div>
-        <div style={{marginBottom:14,padding:"12px 14px",background:"#060e1e",borderRadius:3,border:"1px solid #1e293b",fontSize:11,color:"#64748b",lineHeight:1.6}}>
-          Copies your complete library JSON to clipboard. Paste it into a <span style={{color:"#a78bfa"}}>.json file</span> (Notepad, TextEdit, etc.) and save it somewhere safe. This is your recovery option if storage is cleared.
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-          {[["OWNED GAMES",owned.length,"#4ade80"],["WISHLIST ITEMS",wishlist.length,"#94a3b8"],["COMPLETED",owned.filter(g=>g.status==="Completed").length,"#a78bfa"],["IN PROGRESS",owned.filter(g=>g.status==="In Progress").length,"#facc15"]].map(([l,v,c])=>(
-            <div key={l} style={{background:"#060e1e",borderRadius:3,padding:"10px 14px"}}>
-              <div style={{fontSize:9,letterSpacing:1.5,color:"#475569",marginBottom:3}}>{l}</div>
-              <div style={{fontSize:22,fontWeight:700,color:c}}>{v}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{marginBottom:12}}>
-          <div style={{fontSize:9,color:"#a78bfa",letterSpacing:1,marginBottom:6}}>▼ CLICK BOX TO SELECT ALL — then Ctrl+C / Cmd+C — paste into a .json file and save</div>
-          <textarea readOnly value={JSON.stringify({exportedAt:new Date().toISOString(),version:"gvi-v1",owned,wishlist},null,2)}
-            onClick={e=>e.target.select()}
-            onFocus={e=>e.target.select()}
-            style={{width:"100%",height:140,background:"#060e1e",border:"1px solid #7c3aed44",borderRadius:3,padding:"6px 8px",color:"#475569",fontFamily:"monospace",fontSize:9,resize:"vertical",outline:"none",boxSizing:"border-box",cursor:"text"}}
-          />
-        </div>
-      </div>
-    )}
-
-    {/* IMPORT TAB */}
-    {tab==="import"&&(
-      <div>
-        <div style={{marginBottom:14,padding:"10px 12px",background:"rgba(250,204,21,0.06)",borderRadius:3,border:"1px solid #facc1533",fontSize:11,color:"#facc15",lineHeight:1.6}}>
-          ⚠ Import <strong>replaces</strong> current data. Export first if you want to preserve what's here.
-        </div>
-
-        {/* File upload */}
-        <div style={{marginBottom:10}}>
-          <Lbl>UPLOAD BACKUP FILE</Lbl>
-          <input type="file" accept=".json" onChange={handleFileUpload}
-            style={{width:"100%",padding:"6px 8px",background:"#1e293b",border:"1px solid #334155",borderRadius:3,color:"#94a3b8",fontFamily:"monospace",fontSize:11,cursor:"pointer"}}/>
-        </div>
-
-        <div style={{textAlign:"center",fontSize:9,color:"#334155",margin:"8px 0"}}>— OR PASTE JSON —</div>
-
-        <div style={{marginBottom:10}}>
-          <Lbl>PASTE BACKUP JSON</Lbl>
-          <textarea value={importText} onChange={e=>setImportText(e.target.value)}
-            style={{width:"100%",height:100,background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"6px 8px",color:"#94a3b8",fontFamily:"monospace",fontSize:10,resize:"vertical",outline:"none",boxSizing:"border-box"}}
-            placeholder='{"owned":[...],"wishlist":[...]}'/>
-        </div>
-
-        {importError&&<div style={{marginBottom:10,padding:"8px 10px",background:"rgba(248,113,113,0.1)",border:"1px solid #f87171",borderRadius:3,fontSize:11,color:"#f87171"}}>{importError}</div>}
-
-        {importPreview&&(
-          <div style={{marginBottom:14,padding:"10px 12px",background:"rgba(74,222,128,0.06)",borderRadius:3,border:"1px solid #4ade8033",fontSize:11,color:"#4ade80",lineHeight:1.8}}>
-            ✓ Valid backup detected<br/>
-            <span style={{color:"#64748b"}}>Exported: {importPreview.exportedAt}</span><br/>
-            {importPreview.owned.length} owned games · {importPreview.wishlist.length} wishlist items
-          </div>
-        )}
-
-        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-          {!importPreview&&<Btn variant="ghost" onClick={parseImport}>PARSE</Btn>}
-          {importPreview&&<Btn variant="success" onClick={()=>onImport(importPreview.owned,importPreview.wishlist)}>RESTORE FROM BACKUP</Btn>}
-        </div>
-      </div>
-    )}
-
-    {/* RESET TAB */}
-    {tab==="reset"&&(
-      <div>
-        {!resetDone?(
-          <>
-            <div style={{marginBottom:14,padding:"12px 14px",background:"rgba(248,113,113,0.08)",borderRadius:3,border:"1px solid #f8717133",fontSize:11,color:"#f87171",lineHeight:1.6}}>
-              ⚠ This wipes all owned and wishlist data and reloads from seed. This cannot be undone. Export first.
-            </div>
-            <div style={{marginBottom:14}}>
-              <Lbl>TYPE "RESET" TO CONFIRM</Lbl>
-              <Inp value={resetConfirm} onChange={setResetConfirm} placeholder="RESET"/>
-            </div>
-            <Btn variant="danger" disabled={resetConfirm!=="RESET"} onClick={()=>setResetDone(true)}>WIPE AND RELOAD SEED DATA</Btn>
-          </>
-        ):(
-          <div style={{textAlign:"center",padding:"20px 0"}}>
-            <div style={{fontSize:11,color:"#f87171",marginBottom:16,letterSpacing:1}}>ARE YOU ABSOLUTELY SURE?</div>
-            <div style={{display:"flex",gap:10,justifyContent:"center"}}>
-              <Btn variant="ghost" onClick={()=>{setResetDone(false);setResetConfirm("");}}>CANCEL</Btn>
-              <Btn variant="danger" onClick={()=>onImport(OWNED_SEED,WISHLIST_SEED)}>YES — WIPE EVERYTHING</Btn>
-            </div>
-          </div>
-        )}
-      </div>
-    )}
-  </div>
-</div>
-```
-
+React.createElement(“div”, {“style”: {position:“fixed”,inset:0,background:“rgba(6,14,30,0.94)”,zIndex:200,display:“flex”,alignItems:“center”,justifyContent:“center”,padding:16}}, React.createElement(“div”, {“style”: {background:”#0a1628”,border:“1px solid #334155”,borderRadius:6,padding:24,width:“100%”,maxWidth:560,maxHeight:“90vh”,overflowY:“auto”,animation:“fadeIn 0.2s ease”}}, React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“space-between”,alignItems:“center”,marginBottom:18}}, React.createElement(“div”, {“style”: {fontSize:13,fontWeight:700,letterSpacing:1,color:”#f1f5f9”}}, “DATA MANAGEMENT”), React.createElement(“button”, {“onClick”: onClose, “style”: {background:“none”,border:“none”,color:”#475569”,cursor:“pointer”,fontSize:20}}, “×”)), React.createElement(TabBar, {“tabs”: [{key:“export”,label:“EXPORT”},{key:“import”,label:“IMPORT”},{key:“reset”,label:“RESET”}], “active”: tab, “onChange”: setTab}), tab===“export”&&(
+React.createElement(“div”, null, React.createElement(“div”, {“style”: {marginBottom:14,padding:“12px 14px”,background:”#060e1e”,borderRadius:3,border:“1px solid #1e293b”,fontSize:11,color:”#64748b”,lineHeight:1.6}}, “Copies your complete library JSON to clipboard. Paste it into a”, React.createElement(“span”, {“style”: {color:”#a78bfa”}}, “.json file”), “(Notepad, TextEdit, etc.) and save it somewhere safe. This is your recovery option if storage is cleared.”), React.createElement(“div”, {“style”: {display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:10,marginBottom:16}}, [[“OWNED GAMES”,owned.length,”#4ade80”],[“WISHLIST ITEMS”,wishlist.length,”#94a3b8”],[“COMPLETED”,owned.filter(g=>g.status===“Completed”).length,”#a78bfa”],[“IN PROGRESS”,owned.filter(g=>g.status===“In Progress”).length,”#facc15”]].map(([l,v,c])=>(
+React.createElement(“div”, {“key”: l, “style”: {background:”#060e1e”,borderRadius:3,padding:“10px 14px”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:1.5,color:”#475569”,marginBottom:3}}, l), React.createElement(“div”, {“style”: {fontSize:22,fontWeight:700,color:c}}, v))
+))), React.createElement(“div”, {“style”: {marginBottom:12}}, React.createElement(“div”, {“style”: {fontSize:9,color:”#a78bfa”,letterSpacing:1,marginBottom:6}}, “▼ CLICK BOX TO SELECT ALL — then Ctrl+C / Cmd+C — paste into a .json file and save”), React.createElement(“textarea”, {“readOnly”: true, “value”: JSON.stringify({exportedAt:new Date().toISOString(),version:“gvi-v1”,owned,wishlist},null,2), “onClick”: e=>e.target.select(), “onFocus”: e=>e.target.select(), “style”: {width:“100%”,height:140,background:”#060e1e”,border:“1px solid #7c3aed44”,borderRadius:3,padding:“6px 8px”,color:”#475569”,fontFamily:“monospace”,fontSize:9,resize:“vertical”,outline:“none”,boxSizing:“border-box”,cursor:“text”}})))
+), tab===“import”&&(
+React.createElement(“div”, null, React.createElement(“div”, {“style”: {marginBottom:14,padding:“10px 12px”,background:“rgba(250,204,21,0.06)”,borderRadius:3,border:“1px solid #facc1533”,fontSize:11,color:”#facc15”,lineHeight:1.6}}, “⚠ Import”, React.createElement(“strong”, null, “replaces”), “current data. Export first if you want to preserve what’s here.”), React.createElement(“div”, {“style”: {marginBottom:10}}, React.createElement(Lbl, null, “UPLOAD BACKUP FILE”), React.createElement(“input”, {“type”: “file”, “accept”: “.json”, “onChange”: handleFileUpload, “style”: {width:“100%”,padding:“6px 8px”,background:”#1e293b”,border:“1px solid #334155”,borderRadius:3,color:”#94a3b8”,fontFamily:“monospace”,fontSize:11,cursor:“pointer”}})), React.createElement(“div”, {“style”: {textAlign:“center”,fontSize:9,color:”#334155”,margin:“8px 0”}}, “— OR PASTE JSON —”), React.createElement(“div”, {“style”: {marginBottom:10}}, React.createElement(Lbl, null, “PASTE BACKUP JSON”), React.createElement(“textarea”, {“value”: importText, “onChange”: e=>setImportText(e.target.value), “style”: {width:“100%”,height:100,background:”#1e293b”,border:“1px solid #334155”,borderRadius:3,padding:“6px 8px”,color:”#94a3b8”,fontFamily:“monospace”,fontSize:10,resize:“vertical”,outline:“none”,boxSizing:“border-box”}, “placeholder”: `{"owned":[...],"wishlist":[...]}`})), importError&&React.createElement(“div”, {“style”: {marginBottom:10,padding:“8px 10px”,background:“rgba(248,113,113,0.1)”,border:“1px solid #f87171”,borderRadius:3,fontSize:11,color:”#f87171”}}, importError), importPreview&&(
+React.createElement(“div”, {“style”: {marginBottom:14,padding:“10px 12px”,background:“rgba(74,222,128,0.06)”,borderRadius:3,border:“1px solid #4ade8033”,fontSize:11,color:”#4ade80”,lineHeight:1.8}}, “✓ Valid backup detected”, React.createElement(“br”, null), React.createElement(“span”, {“style”: {color:”#64748b”}}, “Exported:”, importPreview.exportedAt), React.createElement(“br”, null), importPreview.owned.length, “owned games ·”, importPreview.wishlist.length, “wishlist items”)
+), React.createElement(“div”, {“style”: {display:“flex”,gap:8,justifyContent:“flex-end”}}, !importPreview&&React.createElement(Btn, {“variant”: “ghost”, “onClick”: parseImport}, “PARSE”), importPreview&&React.createElement(Btn, {“variant”: “success”, “onClick”: ()=>onImport(importPreview.owned,importPreview.wishlist)}, “RESTORE FROM BACKUP”)))
+), tab===“reset”&&(
+React.createElement(“div”, null, !resetDone?(
+React.createElement(React.Fragment, null, React.createElement(“div”, {“style”: {marginBottom:14,padding:“12px 14px”,background:“rgba(248,113,113,0.08)”,borderRadius:3,border:“1px solid #f8717133”,fontSize:11,color:”#f87171”,lineHeight:1.6}}, “⚠ This wipes all owned and wishlist data and reloads from seed. This cannot be undone. Export first.”), React.createElement(“div”, {“style”: {marginBottom:14}}, React.createElement(Lbl, null, “TYPE "RESET" TO CONFIRM”), React.createElement(Inp, {“value”: resetConfirm, “onChange”: setResetConfirm, “placeholder”: “RESET”})), React.createElement(Btn, {“variant”: “danger”, “disabled”: resetConfirm!==“RESET”, “onClick”: ()=>setResetDone(true)}, “WIPE AND RELOAD SEED DATA”))
+):(
+React.createElement(“div”, {“style”: {textAlign:“center”,padding:“20px 0”}}, React.createElement(“div”, {“style”: {fontSize:11,color:”#f87171”,marginBottom:16,letterSpacing:1}}, “ARE YOU ABSOLUTELY SURE?”), React.createElement(“div”, {“style”: {display:“flex”,gap:10,justifyContent:“center”}}, React.createElement(Btn, {“variant”: “ghost”, “onClick”: ()=>{setResetDone(false);setResetConfirm(””);}}, “CANCEL”), React.createElement(Btn, {“variant”: “danger”, “onClick”: ()=>onImport(OWNED_SEED,WISHLIST_SEED)}, “YES — WIPE EVERYTHING”)))
+))
+)))
 );
 }
 
@@ -1377,44 +919,9 @@ marginTop:4 };
 const lbl = { fontFamily:“monospace”, fontSize:10, letterSpacing:1.5, color:”#64748b”, display:“block”, marginBottom:2 };
 
 return (
-<div style={{minHeight:“100vh”,background:”#060e1e”,display:“flex”,alignItems:“center”,justifyContent:“center”,padding:24,fontFamily:”‘Courier Prime’,‘Courier New’,monospace”}}>
-<div style={{width:“100%”,maxWidth:500,background:”#0a1628”,border:“1px solid #7c3aed44”,borderRadius:6,padding:32,boxShadow:“0 0 40px #7c3aed11”}}>
-<div style={{fontSize:9,letterSpacing:4,color:”#7c3aed”,marginBottom:4}}>GAME VALUE INDEX</div>
-<div style={{fontSize:20,fontWeight:700,color:”#f1f5f9”,marginBottom:4}}>LIBRARY TRACKER</div>
-<div style={{fontSize:10,color:”#475569”,letterSpacing:1,marginBottom:28}}>FIRST-TIME DEVICE SETUP</div>
-
-```
-    <div style={{marginBottom:20,padding:"12px 14px",background:"#060e1e",borderRadius:3,border:"1px solid #1e293b",fontSize:11,color:"#64748b",lineHeight:1.7}}>
-      Enter your two API keys to connect this device. Both are stored only in this browser's <span style={{color:"#a78bfa"}}>localStorage</span> — they never leave your device except to talk directly to GitHub and Anthropic.
-    </div>
-
-    <div style={{marginBottom:16}}>
-      <label style={lbl}>GITHUB TOKEN (classic, gist scope)</label>
-      <div style={{fontSize:9,color:"#334155",marginBottom:4}}>github.com → Settings → Developer Settings → Personal Access Tokens (classic)</div>
-      <input type="password" value={gistToken} onChange={e=>setGistToken(e.target.value)}
-        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style={inp}/>
-    </div>
-
-    <div style={{marginBottom:20}}>
-      <label style={lbl}>ANTHROPIC API KEY (for GVI projections)</label>
-      <div style={{fontSize:9,color:"#334155",marginBottom:4}}>console.anthropic.com → API Keys → Create Key</div>
-      <input type="password" value={anthropicKey} onChange={e=>setAnthropicKey(e.target.value)}
-        onKeyDown={e=>e.key==="Enter"&&handleConnect()}
-        placeholder="sk-ant-xxxxxxxxxxxxxxxxxxxx" style={inp}/>
-    </div>
-
-    {error && <div style={{marginBottom:14,padding:"8px 10px",background:"rgba(248,113,113,0.1)",border:"1px solid #f87171",borderRadius:3,fontSize:11,color:"#f87171"}}>{error}</div>}
-
-    <button onClick={handleConnect} disabled={testing||!gistToken.trim()||!anthropicKey.trim()}
-      style={{width:"100%",padding:"10px",borderRadius:3,cursor:testing?"wait":"pointer",fontSize:11,
-        fontFamily:"monospace",letterSpacing:1.5,background:"#7c3aed",border:"1px solid #7c3aed",
-        color:"#fff",opacity:testing||!gistToken.trim()||!anthropicKey.trim()?0.5:1,transition:"all 0.15s"}}>
-      {testing ? "VERIFYING..." : "CONNECT & SYNC"}
-    </button>
-  </div>
-</div>
-```
-
+React.createElement(“div”, {“style”: {minHeight:“100vh”,background:”#060e1e”,display:“flex”,alignItems:“center”,justifyContent:“center”,padding:24,fontFamily:”‘Courier Prime’,‘Courier New’,monospace”}}, React.createElement(“div”, {“style”: {width:“100%”,maxWidth:500,background:”#0a1628”,border:“1px solid #7c3aed44”,borderRadius:6,padding:32,boxShadow:“0 0 40px #7c3aed11”}}, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:4,color:”#7c3aed”,marginBottom:4}}, “GAME VALUE INDEX”), React.createElement(“div”, {“style”: {fontSize:20,fontWeight:700,color:”#f1f5f9”,marginBottom:4}}, “LIBRARY TRACKER”), React.createElement(“div”, {“style”: {fontSize:10,color:”#475569”,letterSpacing:1,marginBottom:28}}, “FIRST-TIME DEVICE SETUP”), React.createElement(“div”, {“style”: {marginBottom:20,padding:“12px 14px”,background:”#060e1e”,borderRadius:3,border:“1px solid #1e293b”,fontSize:11,color:”#64748b”,lineHeight:1.7}}, “Enter your two API keys to connect this device. Both are stored only in this browser’s”, React.createElement(“span”, {“style”: {color:”#a78bfa”}}, “localStorage”), “— they never leave your device except to talk directly to GitHub and Anthropic.”), React.createElement(“div”, {“style”: {marginBottom:16}}, React.createElement(“label”, {“style”: lbl}, “GITHUB TOKEN (classic, gist scope)”), React.createElement(“div”, {“style”: {fontSize:9,color:”#334155”,marginBottom:4}}, “github.com → Settings → Developer Settings → Personal Access Tokens (classic)”), React.createElement(“input”, {“type”: “password”, “value”: gistToken, “onChange”: e=>setGistToken(e.target.value), “placeholder”: “ghp_xxxxxxxxxxxxxxxxxxxx”, “style”: inp})), React.createElement(“div”, {“style”: {marginBottom:20}}, React.createElement(“label”, {“style”: lbl}, “ANTHROPIC API KEY (for GVI projections)”), React.createElement(“div”, {“style”: {fontSize:9,color:”#334155”,marginBottom:4}}, “console.anthropic.com → API Keys → Create Key”), React.createElement(“input”, {“type”: “password”, “value”: anthropicKey, “onChange”: e=>setAnthropicKey(e.target.value), “onKeyDown”: e=>e.key===“Enter”&&handleConnect(), “placeholder”: “sk-ant-xxxxxxxxxxxxxxxxxxxx”, “style”: inp})), error && React.createElement(“div”, {“style”: {marginBottom:14,padding:“8px 10px”,background:“rgba(248,113,113,0.1)”,border:“1px solid #f87171”,borderRadius:3,fontSize:11,color:”#f87171”}}, error), React.createElement(“button”, {“onClick”: handleConnect, “disabled”: testing||!gistToken.trim()||!anthropicKey.trim(), “style”: {width:“100%”,padding:“10px”,borderRadius:3,cursor:testing?“wait”:“pointer”,fontSize:11,
+fontFamily:“monospace”,letterSpacing:1.5,background:”#7c3aed”,border:“1px solid #7c3aed”,
+color:”#fff”,opacity:testing||!gistToken.trim()||!anthropicKey.trim()?0.5:1,transition:“all 0.15s”}}, testing ? “VERIFYING…” : “CONNECT & SYNC”)))
 );
 }
 
@@ -1599,12 +1106,10 @@ showToast(`Restored: ${newOwned.length} owned + ${newWish.length} wishlist`, “
 };
 
 // ── Render gates ────────────────────────────────────────────────────────────
-if(needsSetup) return <SetupScreen onComplete={handleSetupComplete}/>;
+if(needsSetup) return React.createElement(SetupScreen, {“onComplete”: handleSetupComplete});
 
 if(loading) return (
-<div style={{minHeight:“100vh”,background:”#060e1e”,display:“flex”,alignItems:“center”,justifyContent:“center”,fontFamily:“monospace”,color:”#475569”,letterSpacing:2,flexDirection:“column”,gap:12}}>
-SYNCING FROM GIST…
-</div>
+React.createElement(“div”, {“style”: {minHeight:“100vh”,background:”#060e1e”,display:“flex”,alignItems:“center”,justifyContent:“center”,fontFamily:“monospace”,color:”#475569”,letterSpacing:2,flexDirection:“column”,gap:12}}, “SYNCING FROM GIST…”)
 );
 
 const syncInd = syncStatus===“saving” ? {color:”#facc15”,dot:”#facc15”,label:“SYNCING…”,pulse:true}
@@ -1614,91 +1119,24 @@ const syncInd = syncStatus===“saving” ? {color:”#facc15”,dot:”#facc15�
 
 // ProjectionModal needs the anthropic key injected — wrap to pass it
 const ProjectionModalWithKey = projectionModal
-? <ProjectionModal game={projectionModal} apiKey={lsGet(LS_ANTHROPIC_KEY)} onSave={handleProjectionSave} onClose={()=>setProjectionModal(null)}/>
+? React.createElement(ProjectionModal, {“game”: projectionModal, “apiKey”: lsGet(LS_ANTHROPIC_KEY), “onSave”: handleProjectionSave, “onClose”: ()=>setProjectionModal(null)})
 : null;
 
 return (
-<div style={{minHeight:“100vh”,background:”#060e1e”,fontFamily:”‘Courier Prime’,‘Courier New’,monospace”,color:”#e2e8f0”}}>
-<style>{`@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap'); *{box-sizing:border-box} ::-webkit-scrollbar{width:5px;height:5px} ::-webkit-scrollbar-track{background:#0a1628} ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px} @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} tr:hover>td{background:rgba(124,58,237,0.04)!important}`}</style>
-
-```
-  {/* HEADER */}
-  <div style={{borderBottom:"1px solid #1e293b",padding:"13px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-    <div>
-      <div style={{fontSize:9,letterSpacing:4,color:"#7c3aed",marginBottom:1}}>GAME VALUE INDEX</div>
-      <div style={{fontSize:18,fontWeight:700,letterSpacing:1}}>LIBRARY TRACKER</div>
-    </div>
-    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-      {lastSynced && <div style={{fontSize:9,color:"#334155",textAlign:"right",lineHeight:1.7}}>
-        <div>{owned.length} OWNED · {wishlist.length} WISHLIST</div>
-        <div>LAST SYNC {new Date(lastSynced).toLocaleTimeString()}</div>
-      </div>}
-      <Btn variant="ghost" size="sm" onClick={handleManualSync} disabled={syncStatus==="saving"}>↻ PULL</Btn>
-      <Btn variant="warn" size="sm" onClick={()=>setDataModal(true)}>⬇ BACKUP</Btn>
-      <div onClick={handleDisconnect}
-        style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",border:`1px solid ${syncInd.color}44`,borderRadius:3,fontSize:9,color:syncInd.color,cursor:"pointer"}}
-        title="Click to disconnect this device">
-        <div style={{width:5,height:5,borderRadius:"50%",background:syncInd.dot,animation:syncInd.pulse?"pulse 1s infinite":"none"}}/>
-        {syncInd.label}
-      </div>
-    </div>
-  </div>
-
-  <div style={{padding:"16px 24px"}}>
-    <StatsBar owned={owned} wishlist={wishlist}/>
-    <TabBar tabs={[{key:"owned",label:"OWNED"},{key:"wishlist",label:"WISHLIST"}]} active={tab}
-      onChange={t=>{setTab(t);setSelectedOwned(null);setSelectedWish(null);}}/>
-
-    {tab==="owned" && (
-      <>
-        <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:12}}>
-          <Btn variant="ghost" size="sm" onClick={()=>setTab("wishlist")}>← WISHLIST</Btn>
-        </div>
-        <OwnedTable games={owned} onSelect={setSelectedOwned} selected={selectedOwned}/>
-        {selectedOwned && (
-          <OwnedDetail g={selectedOwned} onClose={()=>setSelectedOwned(null)}
-            onScore={()=>setScoreModal({game:selectedOwned,initialStatus:selectedOwned.status==="Not Started"?"Completed":selectedOwned.status})}
-            onStart={()=>setStartedModal(selectedOwned)}/>
-        )}
-      </>
-    )}
-
-    {tab==="wishlist" && (
-      <>
-        <div style={{display:"flex",gap:8,marginBottom:12,justifyContent:"flex-end"}}>
-          <Btn variant="ghost" size="sm" onClick={()=>setDekuModal(true)}>⟳ SYNC DEKU DEALS</Btn>
-          <Btn variant="primary" size="sm" onClick={()=>setAddWishModal(true)}>+ ADD ENTRY</Btn>
-        </div>
-        <WishlistTable items={wishlist} onSelect={setSelectedWish} selected={selectedWish}/>
-        {selectedWish && (
-          <WishlistDetail g={selectedWish} onClose={()=>setSelectedWish(null)}
-            onBuy={handleBuy} onProject={item=>setProjectionModal(item)}/>
-        )}
-      </>
-    )}
-
-    <div style={{marginTop:14,padding:"8px 12px",background:"#0a1628",border:"1px solid #1e293b",borderRadius:4,fontSize:9,letterSpacing:1,display:"flex",gap:20,flexWrap:"wrap",alignItems:"center"}}>
-      <span style={{color:"#334155"}}>GIST: {GIST_ID.slice(0,12)}...</span>
-      <span style={{color:"#334155"}}>FILE: {GIST_FILENAME}</span>
-      <span style={{marginLeft:"auto",color:"#7c3aed"}}>GVI LIBRARY TRACKER v5 — GITHUB PAGES</span>
-    </div>
-  </div>
-
-  {scoreModal && <ScoreModal game={scoreModal.game} initialStatus={scoreModal.initialStatus} onSave={handleScore} onClose={()=>setScoreModal(null)}/>}
-  {startedModal && <StartedModal game={startedModal} onSave={handleStarted} onClose={()=>setStartedModal(null)}/>}
-  {addWishModal && <AddWishlistModal existingTitles={wishlist.map(w=>w.title)} onSave={handleAddWish} onClose={()=>setAddWishModal(false)}/>}
-  {dekuModal && <DekuSyncModal currentWishlist={wishlist} onSync={handleDekuSync} onClose={()=>setDekuModal(false)}/>}
-  {ProjectionModalWithKey}
-  {dataModal && <DataModal owned={owned} wishlist={wishlist} onImport={handleImport} onClose={()=>setDataModal(false)}/>}
-  {toast && <Toast msg={toast.msg} type={toast.type}/>}
-</div>
-```
-
+React.createElement(“div”, {“style”: {minHeight:“100vh”,background:”#060e1e”,fontFamily:”‘Courier Prime’,‘Courier New’,monospace”,color:”#e2e8f0”}}, React.createElement(“style”, null, `@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap'); *{box-sizing:border-box} ::-webkit-scrollbar{width:5px;height:5px} ::-webkit-scrollbar-track{background:#0a1628} ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px} @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} tr:hover>td{background:rgba(124,58,237,0.04)!important}`), React.createElement(“div”, {“style”: {borderBottom:“1px solid #1e293b”,padding:“13px 24px”,display:“flex”,alignItems:“center”,justifyContent:“space-between”,flexWrap:“wrap”,gap:8}}, React.createElement(“div”, null, React.createElement(“div”, {“style”: {fontSize:9,letterSpacing:4,color:”#7c3aed”,marginBottom:1}}, “GAME VALUE INDEX”), React.createElement(“div”, {“style”: {fontSize:18,fontWeight:700,letterSpacing:1}}, “LIBRARY TRACKER”)), React.createElement(“div”, {“style”: {display:“flex”,alignItems:“center”,gap:8,flexWrap:“wrap”}}, lastSynced && React.createElement(“div”, {“style”: {fontSize:9,color:”#334155”,textAlign:“right”,lineHeight:1.7}}, React.createElement(“div”, null, owned.length, “OWNED ·”, wishlist.length, “WISHLIST”), React.createElement(“div”, null, “LAST SYNC”, new Date(lastSynced).toLocaleTimeString())), React.createElement(Btn, {“variant”: “ghost”, “size”: “sm”, “onClick”: handleManualSync, “disabled”: syncStatus===“saving”}, “↻ PULL”), React.createElement(Btn, {“variant”: “warn”, “size”: “sm”, “onClick”: ()=>setDataModal(true)}, “⬇ BACKUP”), React.createElement(“div”, {“onClick”: handleDisconnect, “style”: {display:“flex”,alignItems:“center”,gap:5,padding:“4px 10px”,border:`1px solid ${syncInd.color}44`,borderRadius:3,fontSize:9,color:syncInd.color,cursor:“pointer”}, “title”: “Click to disconnect this device”}, React.createElement(“div”, {“style”: {width:5,height:5,borderRadius:“50%”,background:syncInd.dot,animation:syncInd.pulse?“pulse 1s infinite”:“none”}}), syncInd.label))), React.createElement(“div”, {“style”: {padding:“16px 24px”}}, React.createElement(StatsBar, {“owned”: owned, “wishlist”: wishlist}), React.createElement(TabBar, {“tabs”: [{key:“owned”,label:“OWNED”},{key:“wishlist”,label:“WISHLIST”}], “active”: tab, “onChange”: t=>{setTab(t);setSelectedOwned(null);setSelectedWish(null);}}), tab===“owned” && (
+React.createElement(React.Fragment, null, React.createElement(“div”, {“style”: {display:“flex”,justifyContent:“flex-end”,gap:8,marginBottom:12}}, React.createElement(Btn, {“variant”: “ghost”, “size”: “sm”, “onClick”: ()=>setTab(“wishlist”)}, “← WISHLIST”)), React.createElement(OwnedTable, {“games”: owned, “onSelect”: setSelectedOwned, “selected”: selectedOwned}), selectedOwned && (
+React.createElement(OwnedDetail, {“g”: selectedOwned, “onClose”: ()=>setSelectedOwned(null), “onScore”: ()=>setScoreModal({game:selectedOwned,initialStatus:selectedOwned.status===“Not Started”?“Completed”:selectedOwned.status}), “onStart”: ()=>setStartedModal(selectedOwned)})
+))
+), tab===“wishlist” && (
+React.createElement(React.Fragment, null, React.createElement(“div”, {“style”: {display:“flex”,gap:8,marginBottom:12,justifyContent:“flex-end”}}, React.createElement(Btn, {“variant”: “ghost”, “size”: “sm”, “onClick”: ()=>setDekuModal(true)}, “⟳ SYNC DEKU DEALS”), React.createElement(Btn, {“variant”: “primary”, “size”: “sm”, “onClick”: ()=>setAddWishModal(true)}, “+ ADD ENTRY”)), React.createElement(WishlistTable, {“items”: wishlist, “onSelect”: setSelectedWish, “selected”: selectedWish}), selectedWish && (
+React.createElement(WishlistDetail, {“g”: selectedWish, “onClose”: ()=>setSelectedWish(null), “onBuy”: handleBuy, “onProject”: item=>setProjectionModal(item)})
+))
+), React.createElement(“div”, {“style”: {marginTop:14,padding:“8px 12px”,background:”#0a1628”,border:“1px solid #1e293b”,borderRadius:4,fontSize:9,letterSpacing:1,display:“flex”,gap:20,flexWrap:“wrap”,alignItems:“center”}}, React.createElement(“span”, {“style”: {color:”#334155”}}, “GIST:”, GIST_ID.slice(0,12), “…”), React.createElement(“span”, {“style”: {color:”#334155”}}, “FILE:”, GIST_FILENAME), React.createElement(“span”, {“style”: {marginLeft:“auto”,color:”#7c3aed”}}, “GVI LIBRARY TRACKER v5 — GITHUB PAGES”))), scoreModal && React.createElement(ScoreModal, {“game”: scoreModal.game, “initialStatus”: scoreModal.initialStatus, “onSave”: handleScore, “onClose”: ()=>setScoreModal(null)}), startedModal && React.createElement(StartedModal, {“game”: startedModal, “onSave”: handleStarted, “onClose”: ()=>setStartedModal(null)}), addWishModal && React.createElement(AddWishlistModal, {“existingTitles”: wishlist.map(w=>w.title), “onSave”: handleAddWish, “onClose”: ()=>setAddWishModal(false)}), dekuModal && React.createElement(DekuSyncModal, {“currentWishlist”: wishlist, “onSync”: handleDekuSync, “onClose”: ()=>setDekuModal(false)}), ProjectionModalWithKey, dataModal && React.createElement(DataModal, {“owned”: owned, “wishlist”: wishlist, “onImport”: handleImport, “onClose”: ()=>setDataModal(false)}), toast && React.createElement(Toast, {“msg”: toast.msg, “type”: toast.type}))
 );
 }
 
-ReactDOM.createRoot(document.getElementById(“root”)).render(<App/>);
-</script>
+ReactDOM.createRoot(document.getElementById(“root”)).render(React.createElement(App, null));
 
+</script>
 </body>
 </html>
