@@ -227,10 +227,11 @@ function ScoreModal({game,initialStatus,onSave,onClose}){
   const[status,setStatus]=useState(initialStatus||game.status||"Completed");
   const[date,setDate]=useState(game.completionDate||"");
   const[purchaseDate,setPurchaseDate]=useState(game.purchaseDate||"");
+  const[price,setPrice]=useState(game.price?.toString()||"");
   const[abandonNote,setAbandonNote]=useState("");
 
   const canCalc=gameplay&&story&&art&&musicSound&&replay&&hours&&difficulty;
-  const result=canCalc?calcGVI(gameplay,story,art,musicSound,replay,parseFloat(hours),game.price||0,status,difficulty):null;
+  const result=canCalc?calcGVI(gameplay,story,art,musicSound,replay,parseFloat(hours),parseFloat(price)||0,status,difficulty):null;
 
   const handleSave=()=>{
     if(!canCalc)return;
@@ -242,6 +243,7 @@ function ScoreModal({game,initialStatus,onSave,onClose}){
       ...game,status,
       completionDate: status!=="In Progress"?date:"",
       purchaseDate: purchaseDate||game.purchaseDate||"",
+      price: parseFloat(price)||game.price||0,
       hoursPlayed:parseFloat(hours),difficulty,
       gameplay,story,art,musicSound,replay,
       personalRating:gviData.personalRating,
@@ -260,10 +262,14 @@ function ScoreModal({game,initialStatus,onSave,onClose}){
           <button onClick={onClose} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:20}}>×</button>
         </div>
 
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:12,marginBottom:16}}>
           <div>
             <Lbl>STATUS</Lbl>
             <Sel value={status} onChange={setStatus} options={["Completed","Abandoned","In Progress"]}/>
+          </div>
+          <div>
+            <Lbl>PRICE PAID ($)</Lbl>
+            <Inp type="number" value={price} onChange={setPrice} step="0.01" min={0} placeholder="0.00"/>
           </div>
           <div>
             <Lbl>PURCHASE DATE</Lbl>
