@@ -5,27 +5,49 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>GVI Gaming Library</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     body { margin: 0; padding: 0; background: #060e1e; }
     * { box-sizing: border-box; }
+    #boot-status { position:fixed; top:0; left:0; right:0; bottom:0; background:#060e1e;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      font-family:monospace; color:#475569; font-size:12px; letter-spacing:2px; gap:12px; }
     #fatal-error { display:none; position:fixed; inset:0; background:#060e1e; color:#f87171;
-      font-family:monospace; font-size:13px; padding:32px; white-space:pre-wrap; z-index:9999; }
+      font-family:monospace; font-size:12px; padding:32px; white-space:pre-wrap; z-index:9999;
+      overflow:auto; }
   </style>
 </head>
 <body>
+  <div id="boot-status">LOADING...</div>
   <div id="root"></div>
   <div id="fatal-error"></div>
   <script>
     window.onerror = function(msg, src, line, col, err) {
+      document.getElementById('boot-status').style.display = 'none';
       var el = document.getElementById('fatal-error');
       el.style.display = 'block';
-      el.textContent = 'STARTUP ERROR\n\n' + msg + '\n\nLine: ' + line;
+      el.textContent = 'STARTUP ERROR\n\nMessage: ' + msg + '\nSource: ' + (src||'unknown') + '\nLine: ' + line + '\n\n' + (err ? err.stack || '' : '');
     };
+    window.addEventListener('unhandledrejection', function(e) {
+      document.getElementById('boot-status').style.display = 'none';
+      var el = document.getElementById('fatal-error');
+      el.style.display = 'block';
+      el.textContent = 'PROMISE ERROR\n\n' + (e.reason ? (e.reason.stack || e.reason.message || String(e.reason)) : String(e));
+    });
   </script>
-  <script type="text/babel" data-presets="react,env">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <script>
+    if (typeof React === 'undefined') {
+      document.getElementById('fatal-error').style.display = 'block';
+      document.getElementById('fatal-error').textContent = 'LOAD ERROR\n\nReact failed to load from CDN.\nCheck your internet connection and try again.';
+    }
+    document.getElementById('boot-status').textContent = 'COMPILING...';
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.4/babel.min.js" crossorigin="anonymous"></script>
+  <script>
+    document.getElementById('boot-status').style.display = 'none';
+  </script>
+  <script type="text/babel" data-presets="react" data-plugins="">
     const { useState, useEffect, useCallback, useRef } = React;
 
 // ─── GVI FORMULA ─────────────────────────────────────────────────────────────
