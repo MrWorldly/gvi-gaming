@@ -866,7 +866,9 @@ Generate a FRESH projection based solely on the inputs above and the player prof
       const hours=inflatedHours||35;
       const price=parseFloat(atlPrice)||0;
       const projGVI=calcProjGVI(parsed.projectedRating, price, hours);
-      setResult({...parsed, projGVI: Math.round(projGVI*1000)/1000, atlPrice:price, inflatedHours:hours});
+      // Normalize: accept either 'formattedNote' or 'note' from the model
+      const normalizedNote = parsed.formattedNote || parsed.note || "";
+      setResult({...parsed, formattedNote: normalizedNote, projGVI: Math.round(projGVI*1000)/1000, atlPrice:price, inflatedHours:hours});
       setStep("result");
     }catch(e){
       setError("Projection failed: "+(e.message||"unknown error"));
@@ -875,7 +877,7 @@ Generate a FRESH projection based solely on the inputs above and the player prof
 
   function handleConfirm(){
     if(!result)return;
-    const fullNote=result.formattedNote.replace("GVI Projection: [auto-calculated by UI]",`GVI Projection: ${result.projGVI.toFixed(3)}`);
+    const fullNote=(result.formattedNote||"").replace("GVI Projection: [auto-calculated by UI]",`GVI Projection: ${result.projGVI.toFixed(3)}`);
     onSave({
       projRating: result.projectedRating,
       projGVI: result.projGVI,
@@ -961,7 +963,7 @@ Generate a FRESH projection based solely on the inputs above and the player prof
             <div style={{marginBottom:18,padding:"12px 14px",background:"#060e1e",border:"1px solid #334155",borderRadius:3}}>
               <div style={{fontSize:9,letterSpacing:1.5,color:"#94a3b8",marginBottom:6}}>FULL NOTE</div>
               <pre style={{fontSize:11,color:"#64748b",lineHeight:1.6,whiteSpace:"pre-wrap",fontFamily:"monospace",margin:0}}>
-                {result.formattedNote.replace("GVI Projection: [auto-calculated by UI]",`GVI Projection: ${result.projGVI.toFixed(3)}`)}
+                {(result.formattedNote||"").replace("GVI Projection: [auto-calculated by UI]",`GVI Projection: ${result.projGVI.toFixed(3)}`)}
               </pre>
             </div>
 
