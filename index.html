@@ -1157,18 +1157,13 @@ function DataModal({owned,wishlist,onImport,onClose}){
           React.createElement("div",null,React.createElement("div",{style:{marginBottom:14,padding:"10px 12px",background:"rgba(250,204,21,0.06)",borderRadius:3,border:"1px solid #facc1533",fontSize:11,color:"#facc15",lineHeight:1.6}},"\u26a0 Import",React.createElement("strong",null,"replaces"),"current data. Export first if you want to preserve what's here."),React.createElement("div",{style:{marginBottom:10}},React.createElement(Lbl,null,"UPLOAD BACKUP FILE"),React.createElement("input",{type:"file",accept:".json",onChange:handleFileUpload,style:{width:"100%",padding:"6px 8px",background:"#1e293b",border:"1px solid #334155",borderRadius:3,color:"#94a3b8",fontFamily:"monospace",fontSize:11,cursor:"pointer"}})),React.createElement("div",{style:{textAlign:"center",fontSize:9,color:"#334155",margin:"8px 0"}},"\u2014 OR PASTE JSON \u2014"),React.createElement("div",{style:{marginBottom:10}},React.createElement(Lbl,null,"PASTE BACKUP JSON"),React.createElement("textarea",{value:importText,onChange:e=>setImportText(e.target.value),style:{width:"100%",height:100,background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"6px 8px",color:"#94a3b8",fontFamily:"monospace",fontSize:10,resize:"vertical",outline:"none",boxSizing:"border-box"},placeholder:"{\"owned\":[...],\"wishlist\":[...]}"})),importError&&React.createElement("div",{style:{marginBottom:10,padding:"8px 10px",background:"rgba(248,113,113,0.1)",border:"1px solid #f87171",borderRadius:3,fontSize:11,color:"#f87171"}},importError),importPreview&&(
               React.createElement("div",{style:{marginBottom:14,padding:"10px 12px",background:"rgba(74,222,128,0.06)",borderRadius:3,border:"1px solid #4ade8033",fontSize:11,color:"#4ade80",lineHeight:1.8}},"\u2713 Valid backup detected",React.createElement("br",null),React.createElement("span",{style:{color:"#64748b"}},"Exported:",importPreview.exportedAt),React.createElement("br",null),importPreview.owned.length,"owned games \u00b7",importPreview.wishlist.length,"wishlist items")
             ),React.createElement("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},!importPreview&&React.createElement(Btn,{variant:"ghost",onClick:parseImport},"PARSE"),importPreview&&React.createElement(Btn,{variant:"success",onClick:()=>onImport(importPreview.owned,importPreview.wishlist)},"RESTORE FROM BACKUP")))
-        )}
-
-        {/* RESET TAB */}
-        {tab==="reset"&&(
+        ),tab==="reset"&&(
           React.createElement("div",null,!resetDone?(
               React.createElement(React.Fragment,null,React.createElement("div",{style:{marginBottom:14,padding:"12px 14px",background:"rgba(248,113,113,0.08)",borderRadius:3,border:"1px solid #f8717133",fontSize:11,color:"#f87171",lineHeight:1.6}},"\u26a0 This wipes all owned and wishlist data and reloads from seed. This cannot be undone. Export first."),React.createElement("div",{style:{marginBottom:14}},React.createElement(Lbl,null,"TYPE \"RESET\" TO CONFIRM"),React.createElement(Inp,{value:resetConfirm,onChange:setResetConfirm,placeholder:"RESET"})),React.createElement(Btn,{variant:"danger",disabled:resetConfirm!=="RESET",onClick:()=>setResetDone(true)},"WIPE AND RELOAD SEED DATA"))
             ):(
               React.createElement("div",{style:{textAlign:"center",padding:"20px 0"}},React.createElement("div",{style:{fontSize:11,color:"#f87171",marginBottom:16,letterSpacing:1}},"ARE YOU ABSOLUTELY SURE?"),React.createElement("div",{style:{display:"flex",gap:10,justifyContent:"center"}},React.createElement(Btn,{variant:"ghost",onClick:()=>{setResetDone(false);setResetConfirm("");}},"CANCEL"),React.createElement(Btn,{variant:"danger",onClick:()=>onImport(OWNED_SEED,WISHLIST_SEED)},"YES \u2014 WIPE EVERYTHING")))
             ))
-        )}
-      </div>
-    </div>
+        ))
   );
 }
 
@@ -1187,38 +1182,13 @@ async function fetchFromGist(){const r=await fetch(`${GIST_RAW}?cb=${Date.now()}
 async function pushToGist(token,owned,wishlist){const body=JSON.stringify({exportedAt:new Date().toISOString(),version:"gvi-v1",owned,wishlist});const r=await fetch(GIST_API,{method:"PATCH",headers:{"Authorization":`token ${token}`,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"},body:JSON.stringify({files:{[GIST_FILENAME]:{content:body}}})});if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(`GitHub ${r.status}: ${e.message||r.statusText}`);}}
 function saveLocal(owned,wishlist){const ts=new Date().toISOString();lsSet(OWNED_KEY,JSON.stringify({games:owned,lastSaved:ts}));lsSet(WISHLIST_KEY,JSON.stringify({games:wishlist,lastSaved:ts}));}
 function loadLocal(){try{const o=lsGet(OWNED_KEY),w=lsGet(WISHLIST_KEY);if(o&&w){const op=JSON.parse(o),wp=JSON.parse(w);return{owned:op.games,wishlist:wp.games,lastSaved:op.lastSaved};}}catch{}return null;}
-
 function SetupScreen({onComplete}){
   const[gt,setGt]=useState("");const[ak,setAk]=useState("");const[busy,setBusy]=useState(false);const[err,setErr]=useState(null);
-  async function go(){
-    if(!gt.trim()){setErr("GitHub token required.");return;}if(!ak.trim()){setErr("Anthropic API key required.");return;}
-    setBusy(true);setErr(null);
-    try{const r=await fetch(GIST_API,{headers:{"Authorization":`token ${gt.trim()}`,"Accept":"application/vnd.github.v3+json"}});if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||r.status);}lsSet(LS_GIST_TOKEN,gt.trim());lsSet(LS_ANTHROPIC_KEY,ak.trim());onComplete();}
-    catch(e){setErr("Failed: "+e.message);}finally{setBusy(false);}
-  }
+  async function go(){if(!gt.trim()){setErr("GitHub token required.");return;}if(!ak.trim()){setErr("Anthropic API key required.");return;}setBusy(true);setErr(null);try{const r=await fetch(GIST_API,{headers:{"Authorization":`token ${gt.trim()}`,"Accept":"application/vnd.github.v3+json"}});if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||r.status);}lsSet(LS_GIST_TOKEN,gt.trim());lsSet(LS_ANTHROPIC_KEY,ak.trim());onComplete();}catch(e){setErr("Failed: "+e.message);}finally{setBusy(false);}}
   const I={width:"100%",boxSizing:"border-box",background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"8px 10px",color:"#e2e8f0",fontFamily:"monospace",fontSize:12,outline:"none",marginTop:4};
   const L={fontFamily:"monospace",fontSize:10,letterSpacing:1.5,color:"#64748b",display:"block",marginBottom:2};
-  return React.createElement("div",{style:{minHeight:"100vh",background:"#060e1e",display:"flex",alignItems:"center",justifyContent:"center",padding:24}},
-    React.createElement("div",{style:{width:"100%",maxWidth:500,background:"#0a1628",border:"1px solid rgba(124,58,237,0.27)",borderRadius:6,padding:32}},
-      React.createElement("div",{style:{fontSize:9,letterSpacing:4,color:"#7c3aed",marginBottom:4}},"GAME VALUE INDEX"),
-      React.createElement("div",{style:{fontSize:20,fontWeight:700,color:"#f1f5f9",marginBottom:4,fontFamily:"monospace"}},"LIBRARY TRACKER"),
-      React.createElement("div",{style:{fontSize:10,color:"#475569",letterSpacing:1,marginBottom:28,fontFamily:"monospace"}},"FIRST-TIME DEVICE SETUP"),
-      React.createElement("div",{style:{marginBottom:16}},
-        React.createElement("label",{style:L},"GITHUB TOKEN (classic, gist scope)"),
-        React.createElement("div",{style:{fontSize:9,color:"#334155",marginBottom:4,fontFamily:"monospace"}},"github.com \u2192 Settings \u2192 Developer Settings \u2192 Personal Access Tokens (classic)"),
-        React.createElement("input",{type:"password",value:gt,onChange:function(e){setGt(e.target.value);},placeholder:"ghp_xxxxxxxxxxxxxxxxxxxx",style:I})
-      ),
-      React.createElement("div",{style:{marginBottom:20}},
-        React.createElement("label",{style:L},"ANTHROPIC API KEY"),
-        React.createElement("div",{style:{fontSize:9,color:"#334155",marginBottom:4,fontFamily:"monospace"}},"console.anthropic.com \u2192 API Keys"),
-        React.createElement("input",{type:"password",value:ak,onChange:function(e){setAk(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")go();},placeholder:"sk-ant-xxxxxxxxxxxxxxxxxxxx",style:I})
-      ),
-      err&&React.createElement("div",{style:{marginBottom:14,padding:"8px 10px",background:"rgba(248,113,113,0.1)",border:"1px solid #f87171",borderRadius:3,fontSize:11,color:"#f87171",fontFamily:"monospace"}},err),
-      React.createElement("button",{onClick:go,disabled:busy||!gt.trim()||!ak.trim(),style:{width:"100%",padding:"10px",borderRadius:3,cursor:busy?"wait":"pointer",fontSize:11,fontFamily:"monospace",letterSpacing:1.5,background:"#7c3aed",border:"none",color:"#fff",opacity:busy||!gt.trim()||!ak.trim()?0.5:1}},busy?"\u2026 VERIFYING":"CONNECT & SYNC")
-    )
-  );
+  return React.createElement("div",{style:{minHeight:"100vh",background:"#060e1e",display:"flex",alignItems:"center",justifyContent:"center",padding:24}},React.createElement("div",{style:{width:"100%",maxWidth:500,background:"#0a1628",border:"1px solid rgba(124,58,237,0.27)",borderRadius:6,padding:32}},React.createElement("div",{style:{fontSize:9,letterSpacing:4,color:"#7c3aed",marginBottom:4}},"GAME VALUE INDEX"),React.createElement("div",{style:{fontSize:20,fontWeight:700,color:"#f1f5f9",marginBottom:4,fontFamily:"monospace"}},"LIBRARY TRACKER"),React.createElement("div",{style:{fontSize:10,color:"#475569",letterSpacing:1,marginBottom:28,fontFamily:"monospace"}},"FIRST-TIME DEVICE SETUP"),React.createElement("div",{style:{marginBottom:16}},React.createElement("label",{style:L},"GITHUB TOKEN (classic, gist scope)"),React.createElement("div",{style:{fontSize:9,color:"#334155",marginBottom:4,fontFamily:"monospace"}},"github.com \u2192 Settings \u2192 Developer Settings \u2192 Personal Access Tokens (classic)"),React.createElement("input",{type:"password",value:gt,onChange:function(e){setGt(e.target.value);},placeholder:"ghp_xxxxxxxxxxxxxxxxxxxx",style:I})),React.createElement("div",{style:{marginBottom:20}},React.createElement("label",{style:L},"ANTHROPIC API KEY"),React.createElement("div",{style:{fontSize:9,color:"#334155",marginBottom:4,fontFamily:"monospace"}},"console.anthropic.com \u2192 API Keys"),React.createElement("input",{type:"password",value:ak,onChange:function(e){setAk(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")go();},placeholder:"sk-ant-xxxxxxxxxxxxxxxxxxxx",style:I})),err&&React.createElement("div",{style:{marginBottom:14,padding:"8px 10px",background:"rgba(248,113,113,0.1)",border:"1px solid #f87171",borderRadius:3,fontSize:11,color:"#f87171",fontFamily:"monospace"}},err),React.createElement("button",{onClick:go,disabled:busy||!gt.trim()||!ak.trim(),style:{width:"100%",padding:"10px",borderRadius:3,cursor:busy?"wait":"pointer",fontSize:11,fontFamily:"monospace",letterSpacing:1.5,background:"#7c3aed",border:"none",color:"#fff",opacity:busy||!gt.trim()||!ak.trim()?0.5:1}},busy?"\u2026 VERIFYING":"CONNECT & SYNC")));
 }
-
 function App(){
   const[owned,setOwned]=useState([]);const[wishlist,setWishlist]=useState([]);const[loading,setLoading]=useState(true);
   const[saving,setSaving]=useState(false);const[syncStatus,setSyncStatus]=useState("idle");const[lastSynced,setLastSynced]=useState(null);
@@ -1231,21 +1201,9 @@ function App(){
   const[needsSetup,setNeedsSetup]=useState(false);
   const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),4000);};
   useEffect(()=>{if(!lsGet(LS_GIST_TOKEN)||!lsGet(LS_ANTHROPIC_KEY)){setNeedsSetup(true);setLoading(false);return;}boot();},[]);
-  async function boot(){
-    setLoading(true);
-    try{const{owned:o,wishlist:w}=await fetchFromGist();setOwned(o);setWishlist(w);setLastSynced(new Date().toISOString());setSyncStatus("idle");saveLocal(o,w);showToast(`Synced \u2014 ${o.length} owned \u00b7 ${w.length} wishlist`,"success");}
-    catch{const c=loadLocal();if(c){setOwned(c.owned);setWishlist(c.wishlist);setLastSynced(c.lastSaved);setSyncStatus("offline");showToast("Gist unreachable \u2014 local cache","warn");}else{setOwned(OWNED_SEED);setWishlist(WISHLIST_SEED);setSyncStatus("offline");showToast("No cache \u2014 seed data","warn");}}
-    finally{setLoading(false);}
-  }
+  async function boot(){setLoading(true);try{const{owned:o,wishlist:w}=await fetchFromGist();setOwned(o);setWishlist(w);setLastSynced(new Date().toISOString());setSyncStatus("idle");saveLocal(o,w);showToast(`Synced \u2014 ${o.length} owned \u00b7 ${w.length} wishlist`,"success");}catch{const c=loadLocal();if(c){setOwned(c.owned);setWishlist(c.wishlist);setLastSynced(c.lastSaved);setSyncStatus("offline");showToast("Gist unreachable \u2014 local cache","warn");}else{setOwned(OWNED_SEED);setWishlist(WISHLIST_SEED);setSyncStatus("offline");showToast("No cache \u2014 seed data","warn");}}finally{setLoading(false);}}
   const saveQueue=useRef(Promise.resolve());
-  const doSave=useCallback((o,w,silent=false)=>{
-    saveQueue.current=saveQueue.current.then(async()=>{
-      setSaving(true);setSyncStatus("saving");
-      try{const token=lsGet(LS_GIST_TOKEN);if(token){await pushToGist(token,o,w);setLastSynced(new Date().toISOString());setSyncStatus("idle");saveLocal(o,w);if(!silent)showToast("Saved & synced","success");}else{saveLocal(o,w);setSyncStatus("offline");if(!silent)showToast("Saved locally","warn");}}
-      catch(e){saveLocal(o,w);setSyncStatus("error");if(!silent)showToast("Gist failed \u2014 saved locally","error");}
-      finally{setSaving(false);}
-    });return saveQueue.current;
-  },[]);
+  const doSave=useCallback((o,w,silent=false)=>{saveQueue.current=saveQueue.current.then(async()=>{setSaving(true);setSyncStatus("saving");try{const token=lsGet(LS_GIST_TOKEN);if(token){await pushToGist(token,o,w);setLastSynced(new Date().toISOString());setSyncStatus("idle");saveLocal(o,w);if(!silent)showToast("Saved & synced","success");}else{saveLocal(o,w);setSyncStatus("offline");if(!silent)showToast("Saved locally","warn");}}catch(e){saveLocal(o,w);setSyncStatus("error");if(!silent)showToast("Gist failed \u2014 saved locally","error");}finally{setSaving(false);}});return saveQueue.current;},[]);
   async function handlePull(){setSyncStatus("saving");try{const{owned:o,wishlist:w}=await fetchFromGist();setOwned(o);setWishlist(w);setLastSynced(new Date().toISOString());setSyncStatus("idle");saveLocal(o,w);showToast(`Pulled \u2014 ${o.length} owned \u00b7 ${w.length} wishlist`,"success");}catch(e){setSyncStatus("error");showToast("Pull failed: "+e.message,"error");}}
   function handleDisconnect(){if(!window.confirm("Disconnect this device?"))return;lsDel(LS_GIST_TOKEN);lsDel(LS_ANTHROPIC_KEY);setNeedsSetup(true);}
   const handleBuy=(wi)=>{const t=today();const e={title:wi.title,status:"Not Started",platform:wi.platform,purchaseDate:t,completionDate:"",estHours:null,hoursPlayed:0,price:wi.targetPrice||0,difficulty:null,gameplay:null,story:null,art:null,musicSound:null,replay:null,projRating:wi.projRating,projGVI:wi.projGVI,notes:`Purchased ${t}`,personalRating:null,actualGVI:null,gviDelta:null,ratingDelta:null};const no=[...owned,e],nw=wishlist.filter(w=>w.title!==wi.title);setOwned(no);setWishlist(nw);setSelectedWish(null);doSave(no,nw);showToast(`"${wi.title}" moved to Owned`,"success");setTab("owned");};
@@ -1257,65 +1215,36 @@ function App(){
   const handleAutoTag=(tagMap)=>{const u=owned.map(g=>tagMap[g.title]!=null?{...g,genres:tagMap[g.title]}:g);const w=wishlist.map(g=>tagMap[g.title]!=null?{...g,genres:tagMap[g.title]}:g);setOwned(u);setWishlist(w);doSave(u,w);setAutoTagModal(false);showToast(`Tagged ${Object.values(tagMap).filter(v=>v?.length>0).length} games`,"success");};
   const handleBatchRating=(updates)=>{const u=owned.map(g=>updates[g.title]!=null?{...g,projRating:updates[g.title]}:g);setOwned(u);doSave(u,wishlist);setBatchRatingModal(false);showToast(`Updated ${Object.keys(updates).length} proj ratings`,"success");};
   const handleImport=(no,nw)=>{setOwned(no);setWishlist(nw);setSelectedOwned(null);setSelectedWish(null);setDataModal(false);doSave(no,nw);showToast(`Restored: ${no.length} owned + ${nw.length} wishlist`,"success");};
-
   if(needsSetup)return React.createElement(SetupScreen,{onComplete:function(){setNeedsSetup(false);boot();}});
   if(loading)return React.createElement("div",{style:{minHeight:"100vh",background:"#060e1e",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"monospace",color:"#94a3b8",letterSpacing:2}},"SYNCING FROM GIST...");
-
   const si=syncStatus==="saving"?{c:"#facc15",label:"SYNCING...",pulse:true}:syncStatus==="error"?{c:"#f87171",label:"SYNC ERROR",pulse:false}:syncStatus==="offline"?{c:"#fb923c",label:"OFFLINE",pulse:false}:{c:"#4ade80",label:"GIST SYNCED",pulse:false};
-
   return React.createElement("div",{style:{minHeight:"100vh",background:"#060e1e",fontFamily:"'Inter',system-ui,sans-serif",color:"#e2e8f0"}},
     React.createElement("style",null,"@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');*{box-sizing:border-box}::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:#0a1628}::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}tr:hover>td{background:rgba(124,58,237,0.04)!important}"),
     React.createElement("div",{style:{borderBottom:"1px solid #1e293b",padding:"13px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}},
-      React.createElement("div",null,
-        React.createElement("div",{style:{fontSize:9,letterSpacing:2,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,color:"#a78bfa",marginBottom:1}},"GAME VALUE INDEX"),
-        React.createElement("div",{style:{fontSize:18,fontWeight:700,letterSpacing:-0.3}},"LIBRARY TRACKER")
-      ),
+      React.createElement("div",null,React.createElement("div",{style:{fontSize:9,letterSpacing:2,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,color:"#a78bfa",marginBottom:1}},"GAME VALUE INDEX"),React.createElement("div",{style:{fontSize:18,fontWeight:700,letterSpacing:-0.3}},"LIBRARY TRACKER")),
       React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}},
-        lastSynced&&React.createElement("div",{style:{fontSize:9,fontFamily:"'JetBrains Mono',monospace",color:"#64748b",textAlign:"right",lineHeight:1.7}},
-          React.createElement("div",null,owned.length," OWNED \u00b7 ",wishlist.length," WISHLIST"),
-          React.createElement("div",null,"SYNCED ",new Date(lastSynced).toLocaleTimeString())
-        ),
+        lastSynced&&React.createElement("div",{style:{fontSize:9,fontFamily:"'JetBrains Mono',monospace",color:"#64748b",textAlign:"right",lineHeight:1.7}},React.createElement("div",null,owned.length," OWNED \u00b7 ",wishlist.length," WISHLIST"),React.createElement("div",null,"SYNCED ",new Date(lastSynced).toLocaleTimeString())),
         React.createElement(Btn,{variant:"ghost",size:"sm",onClick:handlePull,disabled:syncStatus==="saving"},"\u21bb PULL"),
         React.createElement(Btn,{variant:"warn",size:"sm",onClick:function(){setDataModal(true);}},"\u21d3 BACKUP"),
-        React.createElement("div",{onClick:handleDisconnect,title:"Click to disconnect",style:{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",border:"1px solid "+si.c+"44",borderRadius:3,fontSize:9,color:si.c,cursor:"pointer"}},
-          React.createElement("div",{style:{width:5,height:5,borderRadius:"50%",background:si.c,animation:si.pulse?"pulse 1s infinite":"none"}}),
-          si.label
-        )
+        React.createElement("div",{onClick:handleDisconnect,title:"Click to disconnect",style:{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",border:"1px solid "+si.c+"44",borderRadius:3,fontSize:9,color:si.c,cursor:"pointer"}},React.createElement("div",{style:{width:5,height:5,borderRadius:"50%",background:si.c,animation:si.pulse?"pulse 1s infinite":"none"}}),si.label)
       )
     ),
     React.createElement("div",{style:{padding:"16px 24px"}},
       React.createElement(StatsBar,{owned:owned,wishlist:wishlist}),
       React.createElement(TabBar,{tabs:[{key:"owned",label:"OWNED"},{key:"wishlist",label:"WISHLIST"},{key:"report",label:"REPORT"},{key:"insights",label:"INSIGHTS"}],active:tab,onChange:function(t){setTab(t);setSelectedOwned(null);setSelectedWish(null);}}),
       tab==="owned"&&React.createElement(React.Fragment,null,
-        React.createElement("div",{style:{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:12}},
-          React.createElement(Btn,{variant:"ghost",size:"sm",onClick:function(){setAutoTagModal(true);}},"\u2726 AUTO-TAG GENRES"),
-          React.createElement(Btn,{variant:"ghost",size:"sm",onClick:function(){setBatchRatingModal(true);}},"\u2726 BATCH PROJ RATINGS"),
-          React.createElement(Btn,{variant:"ghost",size:"sm",onClick:function(){setTab("wishlist");}},"\u2190 WISHLIST")
-        ),
+        React.createElement("div",{style:{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:12}},React.createElement(Btn,{variant:"ghost",size:"sm",onClick:function(){setAutoTagModal(true);}},"\u2726 AUTO-TAG GENRES"),React.createElement(Btn,{variant:"ghost",size:"sm",onClick:function(){setBatchRatingModal(true);}},"\u2726 BATCH PROJ RATINGS"),React.createElement(Btn,{variant:"ghost",size:"sm",onClick:function(){setTab("wishlist");}},"\u2190 WISHLIST")),
         React.createElement(OwnedTable,{games:owned,onSelect:setSelectedOwned,selected:selectedOwned}),
-        selectedOwned&&React.createElement(OwnedDetail,{g:selectedOwned,onClose:function(){setSelectedOwned(null);},
-          onScore:function(){setScoreModal({game:selectedOwned,initialStatus:selectedOwned.status==="Not Started"?"Completed":selectedOwned.status});},
-          onStart:function(){setStartedModal(selectedOwned);},
-          onSaveNote:function(note){const u=owned.map(g=>g.title===selectedOwned.title?{...g,notes:note}:g);setOwned(u);setSelectedOwned({...selectedOwned,notes:note});doSave(u,wishlist);},
-          onSaveGenre:function(genres){const u=owned.map(g=>g.title===selectedOwned.title?{...g,genres}:g);setOwned(u);setSelectedOwned({...selectedOwned,genres});doSave(u,wishlist);}
-        })
+        selectedOwned&&React.createElement(OwnedDetail,{g:selectedOwned,onClose:function(){setSelectedOwned(null);},onScore:function(){setScoreModal({game:selectedOwned,initialStatus:selectedOwned.status==="Not Started"?"Completed":selectedOwned.status});},onStart:function(){setStartedModal(selectedOwned);},onSaveNote:function(note){const u=owned.map(g=>g.title===selectedOwned.title?{...g,notes:note}:g);setOwned(u);setSelectedOwned({...selectedOwned,notes:note});doSave(u,wishlist);},onSaveGenre:function(genres){const u=owned.map(g=>g.title===selectedOwned.title?{...g,genres}:g);setOwned(u);setSelectedOwned({...selectedOwned,genres});doSave(u,wishlist);}})
       ),
       tab==="wishlist"&&React.createElement(React.Fragment,null,
-        React.createElement("div",{style:{display:"flex",gap:8,marginBottom:12,justifyContent:"flex-end"}},
-          React.createElement(Btn,{variant:"ghost",size:"sm",onClick:function(){setDekuModal(true);}},"\u21bb SYNC DEKU DEALS"),
-          React.createElement(Btn,{variant:"primary",size:"sm",onClick:function(){setAddWishModal(true);}},"+\u00a0ADD ENTRY")
-        ),
+        React.createElement("div",{style:{display:"flex",gap:8,marginBottom:12,justifyContent:"flex-end"}},React.createElement(Btn,{variant:"ghost",size:"sm",onClick:function(){setDekuModal(true);}},"\u21bb SYNC DEKU DEALS"),React.createElement(Btn,{variant:"primary",size:"sm",onClick:function(){setAddWishModal(true);}},"+\u00a0ADD ENTRY")),
         React.createElement(WishlistTable,{items:wishlist,onSelect:setSelectedWish,selected:selectedWish}),
-        selectedWish&&React.createElement(WishlistDetail,{g:selectedWish,onClose:function(){setSelectedWish(null);},onBuy:handleBuy,onProject:function(item){setProjectionModal(item);},
-          onSaveGenre:function(genres){const u=wishlist.map(g=>g.title===selectedWish.title?{...g,genres}:g);setWishlist(u);setSelectedWish({...selectedWish,genres});doSave(owned,u);}
-        })
+        selectedWish&&React.createElement(WishlistDetail,{g:selectedWish,onClose:function(){setSelectedWish(null);},onBuy:handleBuy,onProject:function(item){setProjectionModal(item);},onSaveGenre:function(genres){const u=wishlist.map(g=>g.title===selectedWish.title?{...g,genres}:g);setWishlist(u);setSelectedWish({...selectedWish,genres});doSave(owned,u);}})
       ),
       tab==="report"&&React.createElement(ReportTab,{owned:owned,wishlist:wishlist}),
       tab==="insights"&&React.createElement(InsightsTab,{owned:owned,wishlist:wishlist}),
-      React.createElement("div",{style:{marginTop:14,padding:"8px 12px",background:"#0a1628",border:"1px solid #1e293b",borderRadius:4,fontSize:9,letterSpacing:1,display:"flex",gap:20,flexWrap:"wrap",alignItems:"center"}},
-        React.createElement("span",{style:{color:"#334155"}},"GIST: ",GIST_ID.slice(0,12),"\u2026"),
-        React.createElement("span",{style:{marginLeft:"auto",color:"#a78bfa"}},"GVI LIBRARY TRACKER v7 \u2014 GIST SYNC + REPORT + INSIGHTS")
-      )
+      React.createElement("div",{style:{marginTop:14,padding:"8px 12px",background:"#0a1628",border:"1px solid #1e293b",borderRadius:4,fontSize:9,letterSpacing:1,display:"flex",gap:20,flexWrap:"wrap",alignItems:"center"}},React.createElement("span",{style:{color:"#334155"}},"GIST: ",GIST_ID.slice(0,12),"\u2026"),React.createElement("span",{style:{marginLeft:"auto",color:"#a78bfa"}},"GVI LIBRARY TRACKER v7 \u2014 GIST SYNC + REPORT + INSIGHTS"))
     ),
     scoreModal&&React.createElement(ScoreModal,{game:scoreModal.game,initialStatus:scoreModal.initialStatus,onSave:handleScore,onClose:function(){setScoreModal(null);}}),
     startedModal&&React.createElement(StartedModal,{game:startedModal,onSave:handleStarted,onClose:function(){setStartedModal(null);}}),
@@ -1328,7 +1257,6 @@ function App(){
     toast&&React.createElement(Toast,{msg:toast.msg,type:toast.type})
   );
 }
-
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App,null));
 
 </script>
