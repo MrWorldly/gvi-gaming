@@ -448,7 +448,7 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
 }
 
 // ─── OWNED DETAIL PANEL ───────────────────────────────────────────────────────
-function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre,onSaveField}){
+function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre,onSaveField,onProject}){
   const[editingNote,setEditingNote]=useState(false);
   const[noteVal,setNoteVal]=useState(g.notes||"");
   const[genreVal,setGenreVal]=useState(g.genres||[]);
@@ -475,6 +475,7 @@ function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre,onSaveFie
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
           {canStart&&<Btn onClick={onStart} variant="warn" size="sm">I STARTED THIS</Btn>}
+          <Btn onClick={onProject} size="sm" variant="warn">✦ GET PROJECTION</Btn>
           {canScore&&<Btn onClick={onScore} variant="primary" size="sm">SCORE / UPDATE</Btn>}
           <button onClick={onClose} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:18}}>×</button>
         </div>
@@ -2255,6 +2256,15 @@ function App(){
     doSave(owned, nw).then(()=>showToast(`Saved — ${item.title}: Rating ${updates.projRating?.toFixed(2)} / GVI ${updates.projGVI?.toFixed(3)}`, "success"));
   };
 
+  const handleOwnedProjectionSave = (updates) => {
+    const item = projectionModal; if(!item) return;
+    const { copyNote, ...rest } = updates;
+    const updated = { ...item, ...rest };
+    const no = owned.map(g=>g.title===item.title?updated:g);
+    setOwned(no); setSelectedOwned(updated); setProjectionModal(null);
+    doSave(no, wishlist).then(()=>showToast(`Saved — ${item.title}: Rating ${updates.projRating?.toFixed(2)} / GVI ${updates.projGVI?.toFixed(3)}`, "success"));
+  };
+
   const handleDekuSync = (stubs) => {
     const nw = [...wishlist, ...stubs];
     setWishlist(nw); doSave(owned, nw);
@@ -2357,6 +2367,7 @@ function App(){
                 onSaveNote={note=>{ const u=owned.map(g=>g.title===selectedOwned.title?{...g,notes:note}:g); setOwned(u); setSelectedOwned({...selectedOwned,notes:note}); doSave(u,wishlist); }}
                 onSaveGenre={genres=>{ const u=owned.map(g=>g.title===selectedOwned.title?{...g,genres}:g); setOwned(u); setSelectedOwned({...selectedOwned,genres}); doSave(u,wishlist); }}
                 onSaveField={fields=>{ const u=owned.map(g=>g.title===selectedOwned.title?{...g,...fields}:g); setOwned(u); setSelectedOwned({...selectedOwned,...fields}); doSave(u,wishlist); }}
+                onProject={()=>setProjectionModal({game:selectedOwned,source:"owned"})}
               />
             )}
           </>
@@ -2374,7 +2385,7 @@ function App(){
                 g={selectedWish}
                 onClose={()=>setSelectedWish(null)}
                 onBuy={handleBuy}
-                onProject={item=>setProjectionModal(item)}
+                onProject={item=>setProjectionModal({game:item,source:"wishlist"})}
                 onSaveGenre={genres=>{ const u=wishlist.map(g=>g.title===selectedWish.title?{...g,genres}:g); setWishlist(u); setSelectedWish({...selectedWish,genres}); doSave(owned,u); }}
               />
             )}
@@ -2395,7 +2406,7 @@ function App(){
       {startedModal && <StartedModal game={startedModal} onSave={handleStarted} onClose={()=>setStartedModal(null)}/>}
       {addWishModal && <AddWishlistModal existingTitles={wishlist.map(w=>w.title)} onSave={handleAddWish} onClose={()=>setAddWishModal(false)}/>}
       {dekuModal && <DekuSyncModal currentWishlist={wishlist} onSync={handleDekuSync} onClose={()=>setDekuModal(false)}/>}
-      {projectionModal && <ProjectionModal game={projectionModal} onSave={handleProjectionSave} onClose={()=>setProjectionModal(null)}/>}
+      {projectionModal && <ProjectionModal game={projectionModal.game} onSave={projectionModal.source==="owned"?handleOwnedProjectionSave:handleProjectionSave} onClose={()=>setProjectionModal(null)}/>}
       {autoTagModal && <AutoTagModal owned={owned} wishlist={wishlist} onSave={handleAutoTag} onClose={()=>setAutoTagModal(false)}/>}
       {batchRatingModal && <BatchRatingModal owned={owned} onSave={handleBatchRating} onClose={()=>setBatchRatingModal(false)}/>}
       {dataModal && <DataModal owned={owned} wishlist={wishlist} onImport={handleImport} onClose={()=>setDataModal(false)}/>}
