@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
 <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 </head>
 <body style="margin:0;background:#060e1e;">
@@ -424,8 +425,8 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
       const currentUrls=new Set(currentWishlist.map(w=>w.dekuLink).filter(Boolean));
       const newItems=items.filter(item=>{
         const name=(item.name||item.title||"").trim();
-        const url=item.url||`https://www.dekudeals.com/items/${(item.slug||"")}`;
-        return name&&!currentTitles.has(normalizeTitle(name))&&!currentUrls.has(url);
+        const url=item.link||item.url||(item.slug?`https://www.dekudeals.com/items/${item.slug}`:null);
+        return name&&!currentTitles.has(normalizeTitle(name))&&!(url&&currentUrls.has(url));
       });
       setResult({total:items.length,newItems});
     }catch(e){
@@ -444,8 +445,8 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
       const currentUrls=new Set(currentWishlist.map(w=>w.dekuLink).filter(Boolean));
       const newItems=items.filter(item=>{
         const name=(item.name||item.title||"").trim();
-        const url=item.url||`https://www.dekudeals.com/items/${(item.slug||"")}`;
-        return name&&!currentTitles.has(normalizeTitle(name))&&!currentUrls.has(url);
+        const url=item.link||item.url||(item.slug?`https://www.dekudeals.com/items/${item.slug}`:null);
+        return name&&!currentTitles.has(normalizeTitle(name))&&!(url&&currentUrls.has(url));
       });
       setPasteResult({total:items.length,newItems});
     }catch(e){setPasteResult({error:"Invalid JSON — make sure you pasted the full response from the URL"});}
@@ -456,7 +457,7 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
       title: fixEncoding((item.name||item.title||"").trim()),
       targetPrice:(v=>v!=null&&v!==""?parseFloat(v)||null:null)(item.desired_price??item.lowest_price?.amount??item.price),
       platform:"",projGVI:null,projRating:null,
-      dekuLink:item.url||`https://www.dekudeals.com/items/${(item.slug||"")}`,
+      dekuLink:(item.link||item.url||(item.slug?`https://www.dekudeals.com/items/${item.slug}`:null))||"",
       isStub:true,
     }));
     onSync(stubs);
@@ -3046,12 +3047,6 @@ function App(){
       }
 
       const ownedRef = `A1:X${numRows + 1}`;
-      ws1["!autofilter"] = { ref: ownedRef };
-      ws1["!tables"] = [{
-        ref: ownedRef, name: "OwnedLibrary", displayName: "OwnedLibrary",
-        headerRowCount: 1, totalsRowCount: 0,
-        tableStyleInfo: { name: "TableStyleMedium2", showFirstColumn: false, showLastColumn: false, showRowStripes: true, showColumnStripes: false }
-      }];
       ws1["!cols"] = [
         {wch:32},{wch:10},{wch:12},{wch:13},{wch:14},{wch:11},
         {wch:12},{wch:10},{wch:10},
@@ -3076,7 +3071,6 @@ function App(){
 
       const ws2 = XLS.utils.aoa_to_sheet([wishHeaders, ...wishRows]);
 
-      // Format proj rating + GVI columns
       for(let i = 0; i < wishlist.length; i++){
         const r = i + 2;
         ["D","E"].forEach(col => {
@@ -3086,20 +3080,85 @@ function App(){
       }
 
       const wishRef = `A1:G${wishlist.length + 1}`;
-      ws2["!autofilter"] = { ref: wishRef };
-      ws2["!tables"] = [{
-        ref: wishRef, name: "Wishlist", displayName: "Wishlist",
-        headerRowCount: 1, totalsRowCount: 0,
-        tableStyleInfo: { name: "TableStyleMedium2", showFirstColumn: false, showLastColumn: false, showRowStripes: true, showColumnStripes: false }
-      }];
       ws2["!cols"] = [{wch:32},{wch:10},{wch:13},{wch:12},{wch:10},{wch:28},{wch:48}];
+
+      // ── TRUE EXCEL TABLES via JSZip zip patching ──────────────────────────────
+      const makeTableXml = (ref, name, id, headers) => {
+        const cols = headers.map((h,i) =>
+          `<tableColumn id="${i+1}" name="${h.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}"/>`
+        ).join("");
+        return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+          +`<table xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" `
+          +`id="${id}" name="${name}" displayName="${name}" ref="${ref}" totalsRowShown="0">`
+          +`<autoFilter ref="${ref}"/>`
+          +`<tableColumns count="${headers.length}">${cols}</tableColumns>`
+          +`<tableStyleInfo name="TableStyleMedium2" showFirstColumn="0" showLastColumn="0" showRowStripes="1" showColumnStripes="0"/>`
+          +`</table>`;
+      };
+
+      const makeRelXml = (id) =>
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+        +`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
+        +`<Relationship Id="rId${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/table" Target="../tables/table${id}.xml"/>`
+        +`</Relationships>`;
+
+      const addTableParts = (wsXml, tableId) => {
+        // Inject tableParts element before closing </worksheet>
+        const tableParts = `<tableParts count="1"><tablePart r:id="rId${tableId}"/></tableParts>`;
+        return wsXml.replace(/<\/worksheet>/, tableParts + "</worksheet>");
+      };
 
       XLS.utils.book_append_sheet(wb, ws1, "Owned");
       XLS.utils.book_append_sheet(wb, ws2, "Wishlist");
 
-      const date = new Date().toISOString().slice(0,10);
-      XLS.writeFile(wb, `gvi-library-${date}.xlsx`);
-      showToast("Export complete", "success");
+      // Write to array buffer, then patch with JSZip
+      const rawArr = XLS.write(wb, { bookType:"xlsx", type:"array" });
+
+      const JSZip = window.JSZip;
+      if(JSZip){
+        JSZip.loadAsync(rawArr).then(zip => {
+          const t1xml = makeTableXml(ownedRef, "OwnedLibrary", 1, ownedHeaders);
+          const t2xml = makeTableXml(wishRef, "Wishlist", 2, wishHeaders);
+
+          zip.file("xl/tables/table1.xml", t1xml);
+          zip.file("xl/tables/table2.xml", t2xml);
+
+          // Patch sheet rels to reference tables
+          const s1RelPath = "xl/worksheets/_rels/sheet1.xml.rels";
+          const s2RelPath = "xl/worksheets/_rels/sheet2.xml.rels";
+          zip.file(s1RelPath, makeRelXml(1));
+          zip.file(s2RelPath, makeRelXml(2));
+
+          // Patch worksheet XMLs to add <tableParts>
+          const patchSheet = (path, tableId) => {
+            const f = zip.file(path);
+            if(!f) return Promise.resolve();
+            return f.async("string").then(xml => {
+              zip.file(path, addTableParts(xml, tableId));
+            });
+          };
+
+          return Promise.all([
+            patchSheet("xl/worksheets/sheet1.xml", 1),
+            patchSheet("xl/worksheets/sheet2.xml", 2),
+          ]).then(() => zip.generateAsync({ type:"blob", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+        }).then(blob => {
+          const date = new Date().toISOString().slice(0,10);
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `gvi-library-${date}.xlsx`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+          showToast("Export complete — true Excel tables", "success");
+        }).catch(e => showToast("Export failed: " + e.message, "error"));
+      } else {
+        // JSZip not available — fall back to plain autofilter export
+        ws1["!autofilter"] = { ref: ownedRef };
+        ws2["!autofilter"] = { ref: wishRef };
+        const date = new Date().toISOString().slice(0,10);
+        XLS.writeFile(wb, `gvi-library-${date}.xlsx`);
+        showToast("Export complete (autofilter only — JSZip not loaded)", "success");
+      }
     } catch(e) {
       showToast("Export failed: " + e.message, "error");
     }
