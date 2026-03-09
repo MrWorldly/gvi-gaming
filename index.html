@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
 <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 </head>
 <body style="margin:0;background:#060e1e;">
@@ -2943,6 +2944,101 @@ function App(){
     }
   };
 
+  const exportToXlsx = () => {
+    try {
+      const XLS = window.XLSX;
+      const wb = XLS.utils.book_new();
+
+      // ── SHEET 1: OWNED ──────────────────────────────────────────────────────
+      // Column order: Title | Platform | Status | Gameplay | Story | Art | Music/Sound | Replay
+      //               | Personal Rating (formula) | Hours Played | Est Hours | Price Paid | Difficulty
+      //               | Base GVI (formula) | Completion Adj (formula) | Final GVI (formula)
+      //               | Proj Rating | Proj GVI | GVI Delta | Purchase Date
+      const ownedHeaders = [
+        "Title","Platform","Status",
+        "Gameplay","Story","Art","Music/Sound","Replay",
+        "Personal Rating",
+        "Hours Played","Est Hours","Price Paid","Difficulty",
+        "Base GVI","Completion Adj","Final GVI",
+        "Proj Rating","Proj GVI","GVI Delta","Purchase Date"
+      ];
+
+      const ownedRows = owned.map((g, i) => {
+        const row = i + 2; // Excel row (1=header)
+        // Column letters (1-indexed): A=Title B=Platform C=Status D=Gameplay E=Story F=Art G=Music H=Replay
+        // I=Personal Rating J=Hours K=EstHours L=Price M=Difficulty N=BaseGVI O=CompAdj P=FinalGVI
+        // Q=ProjRating R=ProjGVI S=GVIDelta T=PurchaseDate
+        const personalRatingFormula = `=(D${row}*0.35)+(E${row}*0.25)+(F${row}*0.20)+(G${row}*0.15)+(H${row}*0.05)`;
+        const ratingsComp = `(I${row}/10*0.5)`;
+        const hoursComp = `(IF(J${row}<=20,0.8,IF(J${row}<=40,0.9,IF(J${row}<=70,1.0,IF(J${row}<=90,0.9,0.8))))*0.25)`;
+        const priceComp = `((70-MIN(70,MAX(0,L${row})))/69*0.25)`;
+        const baseGVIFormula = `=${ratingsComp}+${hoursComp}+${priceComp}`;
+        const compAdjFormula = `=IF(C${row}="Completed",M${row}*0.01,IF(C${row}="Abandoned",-(M${row}*0.01),0))`;
+        const finalGVIFormula = `=N${row}+O${row}`;
+
+        return [
+          g.title || "",
+          g.platform || "",
+          g.status || "",
+          g.gameplay ?? "",
+          g.story ?? "",
+          g.art ?? "",
+          g.musicSound ?? "",
+          g.replay ?? "",
+          { f: personalRatingFormula.slice(1) },
+          g.hoursPlayed ?? "",
+          g.estHours ?? "",
+          g.pricePaid ?? "",
+          g.difficulty ?? "",
+          { f: baseGVIFormula.slice(1) },
+          { f: compAdjFormula.slice(1) },
+          { f: finalGVIFormula.slice(1) },
+          g.projRating ?? "",
+          g.projGVI ?? "",
+          g.gviDelta ?? "",
+          g.purchaseDate || "",
+        ];
+      });
+
+      const ownedData = [ownedHeaders, ...ownedRows];
+      const ws1 = XLS.utils.aoa_to_sheet(ownedData);
+
+      // Column widths
+      ws1["!cols"] = [
+        {wch:32},{wch:10},{wch:12},
+        {wch:10},{wch:8},{wch:6},{wch:12},{wch:8},
+        {wch:15},
+        {wch:12},{wch:10},{wch:11},{wch:11},
+        {wch:10},{wch:14},{wch:10},
+        {wch:11},{wch:10},{wch:10},{wch:14}
+      ];
+
+      // ── SHEET 2: WISHLIST ────────────────────────────────────────────────────
+      const wishHeaders = ["Title","Platform","Target Price","Proj Rating","Proj GVI","Deku Link"];
+      const wishRows = wishlist.map(g => [
+        g.title || "",
+        g.platform || "",
+        g.targetPrice ?? "",
+        g.projRating ?? "",
+        g.projGVI ?? "",
+        g.dekuLink || "",
+      ]);
+
+      const wishData = [wishHeaders, ...wishRows];
+      const ws2 = XLS.utils.aoa_to_sheet(wishData);
+      ws2["!cols"] = [{wch:32},{wch:10},{wch:13},{wch:12},{wch:10},{wch:48}];
+
+      XLS.utils.book_append_sheet(wb, ws1, "Owned");
+      XLS.utils.book_append_sheet(wb, ws2, "Wishlist");
+
+      const date = new Date().toISOString().slice(0,10);
+      XLS.writeFile(wb, `gvi-library-${date}.xlsx`);
+      showToast("Export complete", "success");
+    } catch(e) {
+      showToast("Export failed: " + e.message, "error");
+    }
+  };
+
   const saveQueue = useRef(Promise.resolve());
   const doSave = useCallback((o, w, ib, silent=false) => {
     // Support old 3-arg calls where ib was silent boolean
@@ -3137,6 +3233,7 @@ function App(){
             </div>
           )}
           <Btn variant="ghost" size="sm" onClick={()=>setConfigModal(true)}>⚙ PROMPTS</Btn>
+          <Btn variant="ghost" size="sm" onClick={exportToXlsx}>⬇ EXCEL</Btn>
           <Btn variant="ghost" size="sm" onClick={handlePull} disabled={syncStatus==="saving"}>⟳ PULL</Btn>
           <Btn variant="warn" size="sm" onClick={()=>setDataModal(true)}>⇓ BACKUP</Btn>
           <div onClick={handleDisconnect} title="Click to disconnect" style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 10px", border:`1px solid ${si.c}44`, borderRadius:3, fontSize:9, color:si.c, cursor:"pointer" }}>
