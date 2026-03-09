@@ -68,7 +68,24 @@ function gviLabel(v){return v!=null?v.toFixed(3):"—";}
 function fmt2(v){return v!=null?v.toFixed(2):"—";}
 function fmtDelta(v){if(v==null)return"—";return(v>=0?"+":"")+v.toFixed(3);}
 function today(){return new Date().toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});}
-
+// Normalize title for fuzzy dedup: fix encoding garbage, strip punctuation, lowercase
+// Fix common UTF-8 mojibake in titles (display-safe, preserves punctuation)
+function fixEncoding(s){
+  if(!s) return "";
+  return s
+    .replace(/â€"/g,"—").replace(/â€"/g,"–")
+    .replace(/â€œ/g,'"').replace(/â€/g,'"')
+    .replace(/â€˜/g,"'").replace(/â€™/g,"'")
+    .replace(/Ã©/g,"é").replace(/Ã /g,"à").replace(/Ã¨/g,"è")
+    .replace(/Ã®/g,"î").replace(/Ã´/g,"ô").replace(/Ã»/g,"û").replace(/Ã¼/g,"ü")
+    .replace(/Ã‡/g,"Ç").replace(/Ã§/g,"ç").replace(/Ã±/g,"ñ")
+    .trim();
+}
+// Normalize for fuzzy dedup: fix encoding, strip punctuation, lowercase
+function normalizeTitle(s){
+  return fixEncoding(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase().replace(/[^a-z0-9\s]/g,"").replace(/\s+/g," ").trim();
+}
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
 const S={
   input:{width:"100%",boxSizing:"border-box",background:"#1e293b",border:"1px solid #334155",borderRadius:3,padding:"6px 8px",color:"#e2e8f0",fontFamily:"'JetBrains Mono',monospace",fontSize:12,outline:"none"},
@@ -402,10 +419,10 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
       if(!res.ok)throw new Error(`HTTP ${res.status}`);
       const data=await res.json();
       const items=data.items||data||[];
-      const currentTitles=new Set(currentWishlist.map(w=>w.title.toLowerCase()));
+      const currentTitles=new Set(currentWishlist.map(w=>normalizeTitle(w.title)));
       const newItems=items.filter(item=>{
         const name=(item.name||item.title||"").trim();
-        return name&&!currentTitles.has(name.toLowerCase());
+        return name&&!currentTitles.has(normalizeTitle(name));
       });
       setResult({total:items.length,newItems});
     }catch(e){
@@ -420,10 +437,10 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
     try{
       const data=JSON.parse(pasteText);
       const items=data.items||data||[];
-      const currentTitles=new Set(currentWishlist.map(w=>w.title.toLowerCase()));
+      const currentTitles=new Set(currentWishlist.map(w=>normalizeTitle(w.title)));
       const newItems=items.filter(item=>{
         const name=(item.name||item.title||"").trim();
-        return name&&!currentTitles.has(name.toLowerCase());
+        return name&&!currentTitles.has(normalizeTitle(name));
       });
       setPasteResult({total:items.length,newItems});
     }catch(e){setPasteResult({error:"Invalid JSON — make sure you pasted the full response from the URL"});}
@@ -431,7 +448,7 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
 
   const confirmSync=(items)=>{
     const stubs=items.map(item=>({
-      title:(item.name||item.title||"").trim(),
+      title: fixEncoding((item.name||item.title||"").trim()),
       targetPrice:item.lowest_price?.amount||item.price||null,
       platform:"",projGVI:null,projRating:null,
       dekuLink:item.url||`https://www.dekudeals.com/items/${(item.slug||"")}`,
@@ -1992,17 +2009,21 @@ function InboxTab({ inbox, config, onGraduate, onDekuSync }) {
   const [phase, setPhase] = useState("idle"); // idle | running | done
   const [results, setResults] = useState({}); // title -> {projRating, projGVI, notes, platform, targetPrice, error}
   const [progress, setProgress] = useState(0);
-  const [checked, setChecked] = useState({});
   const [graduating, setGraduating] = useState(false);
 
-  // Initialize all checked when results arrive
+  // All games checked by default on mount / when inbox changes
+  const [checked, setChecked] = useState(() => {
+    const init = {};
+    inbox.forEach(g => { init[g.title] = true; });
+    return init;
+  });
   React.useEffect(() => {
-    if(phase === "done"){
-      const init = {};
-      inbox.forEach(g => { if(results[g.title] && !results[g.title].error) init[g.title] = true; });
-      setChecked(init);
-    }
-  }, [phase]);
+    setChecked(prev => {
+      const next = {};
+      inbox.forEach(g => { next[g.title] = prev[g.title] !== undefined ? prev[g.title] : true; });
+      return next;
+    });
+  }, [inbox]);
 
   function calcProjGVI(projRating, price, hours){
     const ratingsComp = (projRating/10)*0.50;
@@ -2125,10 +2146,12 @@ Generate a FRESH projection based solely on the inputs above and the player prof
             </div>
           ))}
         </div>
-        <div style={{ display:"flex", gap:8 }}>
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           <Btn variant="ghost" onClick={onDekuSync}>⟳ SYNC DEKU DEALS</Btn>
+          <Btn variant="ghost" size="sm" onClick={()=>toggleAll(true)}>CHECK ALL</Btn>
+          <Btn variant="ghost" size="sm" onClick={()=>toggleAll(false)}>UNCHECK ALL</Btn>
           {phase === "idle" && (
-            <Btn variant="warn" onClick={runBatchProjections}>✦ RUN BATCH PROJECTIONS</Btn>
+            <Btn variant="warn" onClick={runBatchProjections} disabled={!inbox.length}>✦ RUN BATCH PROJECTIONS</Btn>
           )}
           {phase === "running" && (
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -2142,15 +2165,11 @@ Generate a FRESH projection based solely on the inputs above and the player prof
             </div>
           )}
           {phase === "done" && (
-            <>
-              <Btn variant="ghost" size="sm" onClick={()=>toggleAll(true)}>CHECK ALL</Btn>
-              <Btn variant="ghost" size="sm" onClick={()=>toggleAll(false)}>UNCHECK ALL</Btn>
-              <Btn variant="warn" size="sm" onClick={runBatchProjections}>↺ RE-RUN</Btn>
-              <Btn variant="success" onClick={graduate} disabled={graduating||checkedCount===0}>
-                {graduating ? "MOVING…" : `MOVE ${checkedCount} TO WISHLIST`}
-              </Btn>
-            </>
+            <Btn variant="warn" size="sm" onClick={runBatchProjections}>↺ RE-RUN</Btn>
           )}
+          <Btn variant="success" onClick={graduate} disabled={graduating||checkedCount===0}>
+            {graduating ? "MOVING…" : `MOVE ${checkedCount} TO WISHLIST`}
+          </Btn>
         </div>
       </div>
 
@@ -2164,19 +2183,17 @@ Generate a FRESH projection based solely on the inputs above and the player prof
 
           return (
             <div key={g.title} style={{
-              background: phase==="done" ? (isChecked ? "#0a1628" : "#060e1e") : "#0a1628",
-              border: `1px solid ${phase==="done" && isChecked ? "#7c3aed44" : "#1e293b"}`,
+              background: isChecked ? "#0a1628" : "#060e1e",
+              border: `1px solid ${isChecked ? "#7c3aed44" : "#1e293b"}`,
               borderRadius:3, padding:"10px 12px",
               display:"flex", alignItems:"flex-start", gap:10,
-              opacity: phase==="done" && !isChecked ? 0.5 : 1,
+              opacity: isChecked ? 1 : 0.5,
               transition:"all 0.15s",
             }}>
-              {/* Checkbox — only show after projections done */}
-              {phase === "done" && (
-                <input type="checkbox" checked={isChecked}
-                  onChange={e => setChecked(prev => ({...prev, [g.title]: e.target.checked}))}
-                  style={{ marginTop:3, accentColor:"#7c3aed", width:15, height:15, flexShrink:0, cursor:"pointer" }}/>
-              )}
+              {/* Checkbox — always visible */}
+              <input type="checkbox" checked={isChecked}
+                onChange={e => setChecked(prev => ({...prev, [g.title]: e.target.checked}))}
+                style={{ marginTop:3, accentColor:"#7c3aed", width:15, height:15, flexShrink:0, cursor:"pointer" }}/>
 
               <div style={{ flex:1, minWidth:0 }}>
                 {/* Title row */}
@@ -3034,11 +3051,11 @@ function App(){
   };
 
   const handleDekuSync = (stubs) => {
-    const existingTitles = new Set([...inbox, ...wishlist].map(g => g.title.toLowerCase()));
-    const newStubs = stubs.filter(s => !existingTitles.has(s.title.toLowerCase()));
+    const existingTitles = new Set([...inbox, ...wishlist, ...owned].map(g => normalizeTitle(g.title)));
+    const newStubs = stubs.filter(s => !existingTitles.has(normalizeTitle(s.title)));
     const ni = [...inbox, ...newStubs];
     setInbox(ni); doSave(owned, wishlist, ni);
-    showToast(`${newStubs.length} stub${newStubs.length===1?"":"s"} added to Inbox`, "success");
+    showToast(`${newStubs.length} new stub${newStubs.length===1?"":"s"} added to Inbox${stubs.length-newStubs.length>0?` · ${stubs.length-newStubs.length} duplicates skipped`:""}`, "success");
   };
 
   const handleAutoTag = (tagMap) => {
