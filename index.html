@@ -2950,67 +2950,81 @@ function App(){
       const wb = XLS.utils.book_new();
 
       // ── SHEET 1: OWNED ──────────────────────────────────────────────────────
-      // Column order: Title | Platform | Status | Gameplay | Story | Art | Music/Sound | Replay
-      //               | Personal Rating (formula) | Hours Played | Est Hours | Price Paid | Difficulty
-      //               | Base GVI (formula) | Completion Adj (formula) | Final GVI (formula)
-      //               | Proj Rating | Proj GVI | GVI Delta | Purchase Date
+      // Logical column order:
+      // A=Title B=Platform C=Status D=Purchase Date E=Completed Date F=Price Paid
+      // G=Hours Played H=Est Hours I=Difficulty
+      // J=Gameplay K=Story L=Art M=Music/Sound N=Replay
+      // O=Personal Rating (formula) P=Base GVI (formula) Q=Completion Adj (formula) R=Final GVI (formula)
+      // S=Proj Rating T=Proj GVI U=GVI Delta
+
       const ownedHeaders = [
-        "Title","Platform","Status",
+        "Title","Platform","Status","Purchase Date","Completed Date","Price Paid",
+        "Hours Played","Est Hours","Difficulty",
         "Gameplay","Story","Art","Music/Sound","Replay",
-        "Personal Rating",
-        "Hours Played","Est Hours","Price Paid","Difficulty",
-        "Base GVI","Completion Adj","Final GVI",
-        "Proj Rating","Proj GVI","GVI Delta","Purchase Date"
+        "Personal Rating","Base GVI","Completion Adj","Final GVI",
+        "Proj Rating","Proj GVI","GVI Delta"
       ];
 
       const ownedRows = owned.map((g, i) => {
-        const row = i + 2; // Excel row (1=header)
-        // Column letters (1-indexed): A=Title B=Platform C=Status D=Gameplay E=Story F=Art G=Music H=Replay
-        // I=Personal Rating J=Hours K=EstHours L=Price M=Difficulty N=BaseGVI O=CompAdj P=FinalGVI
-        // Q=ProjRating R=ProjGVI S=GVIDelta T=PurchaseDate
-        const personalRatingFormula = `=(D${row}*0.35)+(E${row}*0.25)+(F${row}*0.20)+(G${row}*0.15)+(H${row}*0.05)`;
-        const ratingsComp = `(I${row}/10*0.5)`;
-        const hoursComp = `(IF(J${row}<=20,0.8,IF(J${row}<=40,0.9,IF(J${row}<=70,1.0,IF(J${row}<=90,0.9,0.8))))*0.25)`;
-        const priceComp = `((70-MIN(70,MAX(0,L${row})))/69*0.25)`;
-        const baseGVIFormula = `=${ratingsComp}+${hoursComp}+${priceComp}`;
-        const compAdjFormula = `=IF(C${row}="Completed",M${row}*0.01,IF(C${row}="Abandoned",-(M${row}*0.01),0))`;
-        const finalGVIFormula = `=N${row}+O${row}`;
+        const row = i + 2;
+        // Score columns: J=10 K=11 L=12 M=13 N=14
+        const J=`J${row}`, K=`K${row}`, L=`L${row}`, M=`M${row}`, N=`N${row}`;
+        // Other input columns
+        const F=`F${row}`, G=`G${row}`, I=`I${row}`, C=`C${row}`;
+        // Calculated columns
+        const O=`O${row}`, P=`P${row}`, Q=`Q${row}`;
+
+        const personalRating  = `IFERROR((${J}*0.35)+(${K}*0.25)+(${L}*0.20)+(${M}*0.15)+(${N}*0.05),"")`;
+        const hoursComp       = `IF(${G}<=20,0.8,IF(${G}<=40,0.9,IF(${G}<=70,1.0,IF(${G}<=90,0.9,0.8))))*0.25`;
+        const baseGVI         = `IFERROR((${O}/10*0.5)+(${hoursComp})+((70-MIN(70,MAX(0,${F})))/69*0.25),"")`;
+        const compAdj         = `IFERROR(IF(${C}="Completed",${I}*0.01,IF(${C}="Abandoned",-(${I}*0.01),0)),"")`;
+        const finalGVI        = `IFERROR(${P}+${Q},"")`;
 
         return [
           g.title || "",
           g.platform || "",
           g.status || "",
+          g.purchaseDate || "",
+          g.completionDate || "",
+          g.price ?? "",
+          g.hoursPlayed ?? "",
+          g.estHours ?? "",
+          g.difficulty ?? "",
           g.gameplay ?? "",
           g.story ?? "",
           g.art ?? "",
           g.musicSound ?? "",
           g.replay ?? "",
-          { f: personalRatingFormula.slice(1) },
-          g.hoursPlayed ?? "",
-          g.estHours ?? "",
-          g.pricePaid ?? "",
-          g.difficulty ?? "",
-          { f: baseGVIFormula.slice(1) },
-          { f: compAdjFormula.slice(1) },
-          { f: finalGVIFormula.slice(1) },
+          { f: personalRating },
+          { f: baseGVI },
+          { f: compAdj },
+          { f: finalGVI },
           g.projRating ?? "",
           g.projGVI ?? "",
           g.gviDelta ?? "",
-          g.purchaseDate || "",
         ];
       });
 
-      const ownedData = [ownedHeaders, ...ownedRows];
-      const ws1 = XLS.utils.aoa_to_sheet(ownedData);
+      const ws1 = XLS.utils.aoa_to_sheet([ownedHeaders, ...ownedRows]);
 
-      // Column widths
+      // Excel table (ListObject) — enables filter/sort/banded rows automatically
+      const ownedRef = `A1:U${owned.length + 1}`;
+      ws1["!autofilter"] = { ref: ownedRef };
+      ws1["!tables"] = [{
+        ref: ownedRef,
+        name: "OwnedLibrary",
+        displayName: "OwnedLibrary",
+        headerRowCount: 1,
+        totalsRowCount: 0,
+        tableStyleInfo: { name: "TableStyleMedium2", showFirstColumn: false, showLastColumn: false, showRowStripes: true, showColumnStripes: false }
+      }];
+
       ws1["!cols"] = [
-        {wch:32},{wch:10},{wch:12},
+        {wch:32},{wch:10},{wch:12},{wch:13},{wch:14},{wch:11},
+        {wch:12},{wch:10},{wch:10},
         {wch:10},{wch:8},{wch:6},{wch:12},{wch:8},
-        {wch:15},
-        {wch:12},{wch:10},{wch:11},{wch:11},
-        {wch:10},{wch:14},{wch:10},
-        {wch:11},{wch:10},{wch:10},{wch:14}
+        {wch:15},{wch:10},{wch:14},{wch:10},
+        {wch:11},{wch:10},{wch:10}
       ];
 
       // ── SHEET 2: WISHLIST ────────────────────────────────────────────────────
@@ -3024,8 +3038,19 @@ function App(){
         g.dekuLink || "",
       ]);
 
-      const wishData = [wishHeaders, ...wishRows];
-      const ws2 = XLS.utils.aoa_to_sheet(wishData);
+      const ws2 = XLS.utils.aoa_to_sheet([wishHeaders, ...wishRows]);
+
+      const wishRef = `A1:F${wishlist.length + 1}`;
+      ws2["!autofilter"] = { ref: wishRef };
+      ws2["!tables"] = [{
+        ref: wishRef,
+        name: "Wishlist",
+        displayName: "Wishlist",
+        headerRowCount: 1,
+        totalsRowCount: 0,
+        tableStyleInfo: { name: "TableStyleMedium2", showFirstColumn: false, showLastColumn: false, showRowStripes: true, showColumnStripes: false }
+      }];
+
       ws2["!cols"] = [{wch:32},{wch:10},{wch:13},{wch:12},{wch:10},{wch:48}];
 
       XLS.utils.book_append_sheet(wb, ws1, "Owned");
