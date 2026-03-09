@@ -2022,14 +2022,10 @@ function InsightsTab({owned,wishlist}){
 
 
 // ─── INBOX TAB ────────────────────────────────────────────────────────────────
-function InboxTab({ inbox, config, onGraduate, onDekuSync }) {
+function InboxTab({ inbox, config, onGraduate, onDekuSync, results, setResults, phase, setPhase, progress, setProgress }) {
   const FF = "'Inter',sans-serif";
   const FM = "'JetBrains Mono',monospace";
 
-  // Batch projection state
-  const [phase, setPhase] = useState("idle"); // idle | running | done
-  const [results, setResults] = useState({}); // title -> {projRating, projGVI, notes, platform, targetPrice, error}
-  const [progress, setProgress] = useState(0);
   const [graduating, setGraduating] = useState(false);
 
   // All games checked by default on mount / when inbox changes
@@ -2867,8 +2863,11 @@ function App(){
   const [batchRatingModal, setBatchRatingModal] = useState(false);
   const [autoTagModal, setAutoTagModal] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
-  const [config, setConfig] = useState(null); // {projection, reports:[{id,name,prompt}]}
+  const [config, setConfig] = useState(null);
   const [configModal, setConfigModal] = useState(false);
+  const [inboxResults, setInboxResults] = useState({});
+  const [inboxPhase, setInboxPhase] = useState("idle");
+  const [inboxProgress, setInboxProgress] = useState(0);
 
   const showToast = (msg, type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null), 4000); };
 
@@ -3236,10 +3235,14 @@ function App(){
             inbox={inbox}
             config={config}
             onDekuSync={()=>setDekuModal(true)}
+            results={inboxResults} setResults={setInboxResults}
+            phase={inboxPhase} setPhase={setInboxPhase}
+            progress={inboxProgress} setProgress={setInboxProgress}
             onGraduate={(graduated, discarded) => {
               const nw = [...wishlist, ...graduated];
               const ni = inbox.filter(g => !graduated.find(k=>k.title===g.title) && !discarded.find(k=>k.title===g.title));
               setWishlist(nw); setInbox(ni); doSave(owned, nw, ni);
+              setInboxResults({}); setInboxPhase("idle"); setInboxProgress(0);
               showToast(`${graduated.length} moved to Wishlist · ${discarded.length} discarded`, "success");
             }}
           />
