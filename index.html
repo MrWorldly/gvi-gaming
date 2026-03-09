@@ -1017,7 +1017,7 @@ function ConfirmPurchaseModal({game, onConfirm, onClose}){
   );
 }
 
-function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre,onSaveField}){
+function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre,onSaveField,onDelete}){
   const[wishGenreVal,setWishGenreVal]=useState(g.genres||[]);
   const[showBuyModal,setShowBuyModal]=useState(false);
   const[editingPlatform,setEditingPlatform]=useState(false);
@@ -1078,6 +1078,7 @@ function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre,onSaveField}){
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
           <Btn onClick={()=>onProject(g)} size="sm" variant="warn">✦ GET PROJECTION</Btn>
           <Btn onClick={()=>setShowBuyModal(true)} size="sm" variant="success">I BOUGHT THIS</Btn>
+          <Btn onClick={()=>{ if(window.confirm(`Remove "${g.title}" from wishlist?`)) onDelete(g); }} size="sm" variant="danger">REMOVE</Btn>
           <button onClick={onClose} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:18}}>×</button>
         </div>
       </div>
@@ -3225,6 +3226,7 @@ function App(){
                 onClose={()=>setSelectedWish(null)}
                 onBuy={handleBuy}
                 onProject={item=>setProjectionModal({game:item,source:"wishlist"})}
+                onDelete={item=>{ const u=wishlist.filter(g=>g.title!==item.title); setWishlist(u); setSelectedWish(null); doSave(owned,u); showToast(`"${item.title}" removed from wishlist`, "success"); }}
                 onSaveGenre={genres=>{ const u=wishlist.map(g=>g.title===selectedWish.title?{...g,genres}:g); setWishlist(u); setSelectedWish({...selectedWish,genres}); doSave(owned,u); }}
                 onSaveField={fields=>{ const u=wishlist.map(g=>g.title===selectedWish.title?{...g,...fields}:g); setWishlist(u); setSelectedWish({...selectedWish,...fields}); doSave(owned,u); }}
               />
