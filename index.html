@@ -136,7 +136,12 @@ function ScoreInput({label,value,onChange}){
 function TabBar({tabs,active,onChange}){
   return(
     <div style={{display:"flex",gap:0,borderBottom:"1px solid #1e293b",marginBottom:16}}>
-      {tabs.map(t=><button key={t.key} onClick={()=>onChange(t.key)} style={{padding:"9px 18px",background:"transparent",border:"none",borderBottom:`2px solid ${active===t.key?"#7c3aed":"transparent"}`,color:active===t.key?"#a78bfa":"#94a3b8",fontFamily:"'Inter',sans-serif",fontWeight:500,fontSize:11,letterSpacing:0.3,cursor:"pointer",transition:"all 0.15s"}}>{t.label}</button>)}
+      {tabs.map(t=>{
+        const isActive=active===t.key;
+        const accent=t.accent||"#7c3aed";
+        const labelColor=isActive?(t.accent||"#a78bfa"):t.accent?"#fb923c":"#94a3b8";
+        return <button key={t.key} onClick={()=>onChange(t.key)} style={{padding:"9px 18px",background:"transparent",border:"none",borderBottom:`2px solid ${isActive?accent:"transparent"}`,color:labelColor,fontFamily:"'Inter',sans-serif",fontWeight:500,fontSize:11,letterSpacing:0.3,cursor:"pointer",transition:"all 0.15s"}}>{t.label}</button>;
+      })}
     </div>
   );
 }
@@ -1919,6 +1924,245 @@ function InsightsTab({owned,wishlist}){
 }
 
 
+// ─── DATA GAPS TAB ────────────────────────────────────────────────────────────
+function DataGapsTab({ owned, wishlist, onSaveOwned, onSaveWishlist, onProject }) {
+  const FF = "'Inter',sans-serif";
+  const FM = "'JetBrains Mono',monospace";
+
+  // Compute gaps
+  const ownedGaps = owned
+    .filter(g => !g.projRating || !g.notes?.trim() ||
+      ((g.status === "In Progress" || g.status === "Not Started") && !g.estHours))
+    .map(g => ({
+      ...g,
+      _source: "owned",
+      _missing: [
+        !g.projRating && "PROJ RATING",
+        !g.notes?.trim() && "NOTE",
+        ((g.status === "In Progress" || g.status === "Not Started") && !g.estHours) && "EST HOURS",
+      ].filter(Boolean),
+    }));
+
+  const wishlistGaps = wishlist
+    .filter(g => !g.projRating || !g.notes?.trim() || !g.targetPrice || !g.platform)
+    .map(g => ({
+      ...g,
+      _source: "wishlist",
+      _missing: [
+        !g.projRating && "PROJ RATING",
+        !g.notes?.trim() && "NOTE",
+        !g.targetPrice && "TARGET $",
+        !g.platform && "PLATFORM",
+      ].filter(Boolean),
+    }));
+
+  const total = ownedGaps.length + wishlistGaps.length;
+
+  const MISS_COLORS = {
+    "PROJ RATING": "#a78bfa",
+    "NOTE": "#fb923c",
+    "EST HOURS": "#facc15",
+    "TARGET $": "#38bdf8",
+    "PLATFORM": "#f472b6",
+  };
+
+  if (total === 0) {
+    return (
+      <div style={{ textAlign:"center", padding:"64px 20px", color:"#4ade80", fontFamily:FF, fontSize:13 }}>
+        ✓ No data gaps — all fields complete.
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Summary bar */}
+      <div style={{ display:"flex", gap:10, marginBottom:16, flexWrap:"wrap" }}>
+        {[
+          ["TOTAL GAPS", total, "#f87171"],
+          ["OWNED", ownedGaps.length, "#94a3b8"],
+          ["WISHLIST", wishlistGaps.length, "#94a3b8"],
+        ].map(([l,v,c]) => (
+          <div key={l} style={{ background:"#0a1628", border:"1px solid #1e293b", borderRadius:4, padding:"8px 14px" }}>
+            <div style={{ fontSize:9, letterSpacing:1.5, color:"#64748b", fontFamily:FM, marginBottom:2 }}>{l}</div>
+            <div style={{ fontSize:18, fontWeight:700, color:c, fontFamily:FM }}>{v}</div>
+          </div>
+        ))}
+        <div style={{ background:"#0a1628", border:"1px solid #1e293b", borderRadius:4, padding:"8px 14px", display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          {Object.entries(MISS_COLORS).map(([label, color]) => (
+            <span key={label} style={{ display:"flex", alignItems:"center", gap:4, fontSize:9, fontFamily:FM, color }}>
+              <span style={{ width:7, height:7, borderRadius:1, background:color, display:"inline-block" }}/>{label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Owned gaps */}
+      {ownedGaps.length > 0 && (
+        <GapSection
+          title="OWNED"
+          games={ownedGaps}
+          source="owned"
+          onSave={onSaveOwned}
+          onProject={onProject}
+          missColors={MISS_COLORS}
+        />
+      )}
+
+      {/* Wishlist gaps */}
+      {wishlistGaps.length > 0 && (
+        <GapSection
+          title="WISHLIST"
+          games={wishlistGaps}
+          source="wishlist"
+          onSave={onSaveWishlist}
+          onProject={onProject}
+          missColors={MISS_COLORS}
+        />
+      )}
+    </div>
+  );
+}
+
+function GapSection({ title, games, source, onSave, onProject, missColors }) {
+  const FF = "'Inter',sans-serif";
+  const FM = "'JetBrains Mono',monospace";
+  return (
+    <div style={{ marginBottom:24 }}>
+      <div style={{ fontSize:9, letterSpacing:2, color:"#64748b", fontFamily:FM, fontWeight:700, marginBottom:8 }}>
+        {title} — {games.length} GAME{games.length !== 1 ? "S" : ""}
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+        {games.map(g => (
+          <GapRow key={g.title} g={g} source={source} onSave={onSave} onProject={onProject} missColors={missColors} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GapRow({ g, source, onSave, onProject, missColors }) {
+  const FF = "'Inter',sans-serif";
+  const FM = "'JetBrains Mono',monospace";
+  const [expanded, setExpanded] = React.useState(false);
+  const [noteVal, setNoteVal] = React.useState(g.notes || "");
+  const [estHoursVal, setEstHoursVal] = React.useState(g.estHours?.toString() || "");
+  const [targetPriceVal, setTargetPriceVal] = React.useState(g.targetPrice?.toString() || "");
+  const [platformVal, setPlatformVal] = React.useState(g.platform || "");
+  const [saving, setSaving] = React.useState(false);
+
+  // Re-sync if parent updates
+  React.useEffect(() => {
+    setNoteVal(g.notes || "");
+    setEstHoursVal(g.estHours?.toString() || "");
+    setTargetPriceVal(g.targetPrice?.toString() || "");
+    setPlatformVal(g.platform || "");
+  }, [g]);
+
+  function save() {
+    setSaving(true);
+    const updates = { notes: noteVal };
+    if (source === "owned" && estHoursVal) updates.estHours = parseFloat(estHoursVal);
+    if (source === "wishlist") {
+      if (targetPriceVal) updates.targetPrice = parseFloat(targetPriceVal);
+      if (platformVal) updates.platform = platformVal;
+    }
+    onSave(g.title, updates);
+    setTimeout(() => { setSaving(false); setExpanded(false); }, 400);
+  }
+
+  const hasMissing = f => g._missing.includes(f);
+
+  return (
+    <div style={{ background:"#0a1628", border:"1px solid #1e293b", borderRadius:3, overflow:"hidden" }}>
+      {/* Row header */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", cursor:"pointer" }}
+        onClick={() => setExpanded(e => !e)}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:12, fontWeight:600, color:"#e2e8f0", fontFamily:FF,
+            overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.title}</div>
+          <div style={{ display:"flex", gap:4, marginTop:3, flexWrap:"wrap" }}>
+            {g.platform && <span style={{ fontSize:9, color:"#64748b", fontFamily:FM }}>{g.platform}</span>}
+            {g.status && <span style={{ fontSize:9, color:STATUS_COLORS[g.status]||"#64748b", fontFamily:FM }}>{g.status?.toUpperCase()}</span>}
+          </div>
+        </div>
+        {/* Missing tags */}
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap", justifyContent:"flex-end" }}>
+          {g._missing.map(m => (
+            <span key={m} style={{ fontSize:9, fontFamily:FM, fontWeight:700, letterSpacing:0.3,
+              color:missColors[m], background:missColors[m]+"18", padding:"2px 6px", borderRadius:2,
+              border:`1px solid ${missColors[m]}44` }}>{m}</span>
+          ))}
+        </div>
+        {/* Projection button */}
+        <Btn size="sm" variant="warn" onClick={e => { e.stopPropagation(); onProject(g, source); }}>✦ PROJ</Btn>
+        {/* Expand chevron */}
+        <span style={{ color:"#475569", fontSize:11, userSelect:"none" }}>{expanded ? "▲" : "▼"}</span>
+      </div>
+
+      {/* Expanded edit panel */}
+      {expanded && (
+        <div style={{ padding:"10px 12px 12px", borderTop:"1px solid #1e293b", display:"flex", flexDirection:"column", gap:10 }}>
+          {/* Row 1: numeric fields */}
+          <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+            {source === "owned" && (
+              <div style={{ minWidth:120 }}>
+                <div style={{ fontSize:9, letterSpacing:1, color: hasMissing("EST HOURS") ? "#facc15" : "#64748b",
+                  fontFamily:FM, marginBottom:3 }}>EST HOURS {hasMissing("EST HOURS") && "⚠"}</div>
+                <input type="number" value={estHoursVal} onChange={e => setEstHoursVal(e.target.value)}
+                  placeholder="e.g. 40" min={1} step={1}
+                  style={{ width:"100%", boxSizing:"border-box", background:"#060e1e", border:`1px solid ${hasMissing("EST HOURS")?"#facc1566":"#334155"}`,
+                    borderRadius:3, padding:"5px 8px", color:"#e2e8f0", fontFamily:FM, fontSize:12, outline:"none" }}/>
+              </div>
+            )}
+            {source === "wishlist" && (
+              <>
+                <div style={{ minWidth:120 }}>
+                  <div style={{ fontSize:9, letterSpacing:1, color: hasMissing("TARGET $") ? "#38bdf8" : "#64748b",
+                    fontFamily:FM, marginBottom:3 }}>TARGET $ {hasMissing("TARGET $") && "⚠"}</div>
+                  <input type="number" value={targetPriceVal} onChange={e => setTargetPriceVal(e.target.value)}
+                    placeholder="e.g. 19.99" min={0} step={0.01}
+                    style={{ width:"100%", boxSizing:"border-box", background:"#060e1e", border:`1px solid ${hasMissing("TARGET $")?"#38bdf866":"#334155"}`,
+                      borderRadius:3, padding:"5px 8px", color:"#e2e8f0", fontFamily:FM, fontSize:12, outline:"none" }}/>
+                </div>
+                <div style={{ minWidth:140 }}>
+                  <div style={{ fontSize:9, letterSpacing:1, color: hasMissing("PLATFORM") ? "#f472b6" : "#64748b",
+                    fontFamily:FM, marginBottom:3 }}>PLATFORM {hasMissing("PLATFORM") && "⚠"}</div>
+                  <select value={platformVal} onChange={e => setPlatformVal(e.target.value)}
+                    style={{ width:"100%", background:"#060e1e", border:`1px solid ${hasMissing("PLATFORM")?"#f472b666":"#334155"}`,
+                      borderRadius:3, padding:"5px 8px", color: platformVal ? "#e2e8f0" : "#475569",
+                      fontFamily:FM, fontSize:12, outline:"none" }}>
+                    <option value="">— select —</option>
+                    {VALID_PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Note */}
+          <div>
+            <div style={{ fontSize:9, letterSpacing:1, color: hasMissing("NOTE") ? "#fb923c" : "#64748b",
+              fontFamily:FM, marginBottom:3 }}>NOTE {hasMissing("NOTE") && "⚠"}</div>
+            <textarea value={noteVal} onChange={e => setNoteVal(e.target.value)} rows={3}
+              placeholder="Enjoyment note…"
+              style={{ width:"100%", boxSizing:"border-box", background:"#060e1e",
+                border:`1px solid ${hasMissing("NOTE")?"#fb923c66":"#334155"}`,
+                borderRadius:3, padding:"6px 8px", color:"#e2e8f0", fontFamily:FF,
+                fontSize:11, lineHeight:1.5, resize:"vertical", outline:"none" }}/>
+          </div>
+
+          {/* Save */}
+          <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+            <Btn size="sm" variant="ghost" onClick={() => setExpanded(false)}>CANCEL</Btn>
+            <Btn size="sm" variant="success" onClick={save} disabled={saving}>{saving ? "SAVING…" : "SAVE"}</Btn>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── STATS BAR ────────────────────────────────────────────────────────────────
 function StatsBar({owned,wishlist,onKpiClick}){
   const completed=owned.filter(g=>g.status==="Completed");
@@ -2546,11 +2790,26 @@ function App(){
       {/* BODY */}
       <div style={{ padding:"16px 24px" }}>
         <StatsBar owned={owned} wishlist={wishlist} onKpiClick={handleKpiClick}/>
-        <TabBar
-          tabs={[{key:"owned",label:"OWNED"},{key:"wishlist",label:"WISHLIST"},{key:"report",label:"REPORT"},{key:"insights",label:"INSIGHTS"}]}
-          active={tab}
-          onChange={t=>{ setTab(t); setSelectedOwned(null); setSelectedWish(null); }}
-        />
+        {(() => {
+          const gapCount = [
+            ...owned.filter(g => !g.projRating || !g.notes?.trim() ||
+              ((g.status==="In Progress"||g.status==="Not Started") && !g.estHours)),
+            ...wishlist.filter(g => !g.projRating || !g.notes?.trim() || !g.targetPrice || !g.platform),
+          ].length;
+          return (
+            <TabBar
+              tabs={[
+                {key:"owned",label:"OWNED"},
+                {key:"wishlist",label:"WISHLIST"},
+                {key:"report",label:"REPORT"},
+                {key:"insights",label:"INSIGHTS"},
+                {key:"gaps", label:gapCount>0?`DATA GAPS (${gapCount})`:"DATA GAPS", accent:gapCount>0?"#fb923c":undefined},
+              ]}
+              active={tab}
+              onChange={t=>{ setTab(t); setSelectedOwned(null); setSelectedWish(null); }}
+            />
+          );
+        })()}
 
         {tab==="owned" && (
           <>
@@ -2613,6 +2872,21 @@ function App(){
 
         {tab==="report" && <ReportTab owned={owned} wishlist={wishlist} config={config} onSaveConfig={saveConfig}/>}
         {tab==="insights" && <InsightsTab owned={owned} wishlist={wishlist}/>}
+        {tab==="gaps" && (
+          <DataGapsTab
+            owned={owned}
+            wishlist={wishlist}
+            onSaveOwned={(title, fields) => {
+              const u = owned.map(g => g.title===title ? {...g,...fields} : g);
+              setOwned(u); doSave(u, wishlist);
+            }}
+            onSaveWishlist={(title, fields) => {
+              const u = wishlist.map(g => g.title===title ? {...g,...fields} : g);
+              setWishlist(u); doSave(owned, u);
+            }}
+            onProject={(game, source) => setProjectionModal({game, source})}
+          />
+        )}
 
         <div style={{ marginTop:14, padding:"8px 12px", background:"#0a1628", border:"1px solid #1e293b", borderRadius:4, fontSize:9, letterSpacing:1, display:"flex", gap:20, flexWrap:"wrap", alignItems:"center" }}>
           <span style={{ color:"#334155" }}>GIST: {GIST_ID.slice(0,12)}…</span>
