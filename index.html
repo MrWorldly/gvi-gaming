@@ -2170,6 +2170,11 @@ Generate a FRESH projection based solely on the inputs above and the player prof
           <Btn variant="success" onClick={graduate} disabled={graduating||checkedCount===0}>
             {graduating ? "MOVING…" : `MOVE ${checkedCount} TO WISHLIST`}
           </Btn>
+          {checkedCount === 0 && (
+            <Btn variant="danger" onClick={()=>{ if(window.confirm(`Delete all ${inbox.length} inbox games permanently?`)) onGraduate([],[...inbox]); }}>
+              CLEAR INBOX
+            </Btn>
+          )}
         </div>
       </div>
 
