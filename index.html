@@ -449,7 +449,7 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
   const confirmSync=(items)=>{
     const stubs=items.map(item=>({
       title: fixEncoding((item.name||item.title||"").trim()),
-      targetPrice:item.lowest_price?.amount||item.price||null,
+      targetPrice:item.desired_price||item.lowest_price?.amount||item.price||null,
       platform:"",projGVI:null,projRating:null,
       dekuLink:item.url||`https://www.dekudeals.com/items/${(item.slug||"")}`,
       isStub:true,
