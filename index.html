@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- GVI Gaming Library v8 - Babel JSX + Recharts + Gist sync - built 2026-03-08 -->
+<!-- GVI Gaming Library v9 - Babel JSX + Recharts + Gist sync - built 2026-03-08 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -737,67 +737,6 @@ Two parts, written as a single short paragraph:
 End with: "For the full force-ranked roadmap, run a monthly report."
 
 If the snapshot is missing (first run ever), generate the report based on current state only, treating everything as "this week". Note at the top: "No previous snapshot found — showing full current library state as baseline."`;
-const DEFAULT_MONTHLY_PROMPT = `You are generating a monthly gaming backlog planning guide. You will receive the player's full owned library and wishlist as JSON. Generate the complete report per the format specification below.
-
-=== PLAYER PREFERENCE PROFILE ===
-CORE IDENTITY: ISTJ — goal-oriented, completion-driven, efficiency-focused. 30+, experienced gamer since NES era.
-STRONG PREFERENCES: Systems-driven combat, momentum-based gameplay, strong early hooks, flexible playstyles, fair difficulty, strategic depth (buildcrafting), modern visuals, strong audio/7.1 surround, 40–70h sweet spot (20–90h acceptable, 100h+ fatigue risk).
-HARD DEALBREAKERS: Punitive stealth, execution-heavy difficulty, roguelike/start-over design, sandbox/crafting without narrative engine, heavy anime energy, juvenile tone (Nintendo cartoon + Beloved IP exceptions apply), caption-dense delivery, contrived modern-setting JRPG premises, bishōnen protagonists, dated mechanics, framerate issues.
-GENRE: High = Metroidvanias, Action-Adventures, Action RPGs, Soulslike (with builds). Medium = Turn-based RPGs (deep+adult tone), Tactical RPGs (system-driven), CRPGs. Low = Roguelikes (<20%), Execution Platformers (<30%), Sandbox (<20%).
-CALIBRATION: Arena shooter/empowerment DNA = always underweighted (DOOM 2016 +0.288 delta). Restriction-first/stealth = always overweighted. Enable accessibility immediately. Platform quality is a hard constraint (framerate, audio).
-
-=== GVI FORMULA ===
-Personal Rating = (Gameplay×0.35)+(Story×0.25)+(Art×0.20)+(MusicSound×0.15)+(Replay×0.05)
-Hours bands: 1-20h=0.80, 21-40h=0.90, 41-70h=1.00, 71-90h=0.90, 91h+=0.80
-Base GVI = (PersonalRating/10×0.50) + (band×0.25) + ((70-price)/69×0.25)
-Final GVI = Base GVI + (difficulty×0.01 if Completed, -difficulty×0.01 if Abandoned, +0 if In Progress)
-Purchase discipline line: 0.700. GVI overstated = very low price (<$8) inflates price component. GVI understated = runtime <20h scores lowest hours band.
-
-=== FORMAT SPECIFICATION ===
-Output Markdown only. 8 sections in order. Use \\$ for dollar signs. Never use ~. GVI to 3 decimal places. Label hours as "est Xh" (HLTB ×1.40). Do NOT recalculate GVI. Prose over bullets. Roman numerals → append Arabic: "Final Fantasy XVI (16)".
-SERIES LOCK: Identify all series. Validate no sequel appears earlier than its predecessor in Section 5. Fix violations silently.
-
-## Section 1 — Key Insights
-Paragraph form. Every observation drives an action.
-### In-Progress Assessment
-Total est remaining hours across all in-progress. Which to abandon (name, rating delta, remaining hours) — only if <75% complete AND >5h remaining. Overperformers and by how much. Unresolved platform decisions with consequential runtime.
-### GVI Formula — What It Measures and Where to Be Careful
-Every report: For completed/in-progress GVI is correct primary metric. For wishlist, projected personal rating is primary. GVI overstated = name each game <$8, show GVI + proj rating. GVI understated = runtime <20h, add 0.05–0.10 mentally, list by name.
-### Genre Calibration Signal
-Both signals every report: Arena shooter/momentum-rewarding = confirmed underweighted, bump projections. Restriction-first/stealth-adjacent = confirmed overweighted, carry abandonment risk flags.
-### Wishlist Data Quality
-Count missing projected personal ratings. State number and %. Name them. Flag as data quality problem. Call out high-GVI games in this group specifically.
-### Additional Insights
-1–3 sharp data-driven observations not obvious from raw numbers.
-
-## Section 2 — Current Play Recommendations
-1–2 games per platform. Balance high-commitment vs lighter. Paragraph form. PS5/PS4 slate now+next. Switch/Switch 2 slate now+next. Hold or assess with exact decision points. Respect series sequencing.
-
-## Section 3 — Suggested Actions
-Bullet list. Only categories with entries: Abandon immediately (name, rating delta, est remaining, completion% — only <75% AND >5h remaining), Finish or cut at next session, Buy now (price + reason), Platform decisions to resolve, Data gaps to fill.
-
-## Section 4 — Buying Guide — Wishlist Ranked by Projected Personal Rating
-Sort by proj rating descending. Top 10 table: Rank | Title | Proj Rating | GVI | Target \\$ | Notes (platform, key risk, sequencing dep, GVI flag — 1 sentence max). Continue from 11.: 11. Title — GVI X.XXX, \\$XX *(note)*. Mark "Below 0.700 GVI — opportunistic only:" transition. Then "No projected personal rating — ranked by GVI proxy only:" tier with disclaimer. Same 0.700 line within tier.
-
-## Section 5 — Play Next — Force Ranked Roadmap
-### Active Games Table
-Columns: # | Title | Platform | Status | Rating | Est Remaining | Priority Note. All in-progress. Rating = actual if available, else proj. No GVI column.
-### Next to Start — Numbered List
-Start at 11. Format: 11. Title — Platform, \\$XX, proj rating X.X *(note)*. Only games with proj personal rating, sorted descending. Predecessor notes what it unlocks.
-### Insufficient Data
-List every game missing proj personal rating. State what's missing. Do not rank by GVI.
-
-## Section 6 — Genre Analysis
-3–5 paragraphs. Completed library genre breakdown + avg ratings. Active/wishlist alignment. Genre mismatches. Preference evolution signal from recent completions.
-
-## Section 7 — Platform Trends
-Table: Platform | Owned | Completed | In Progress | Wishlist Targets
-2–4 paragraphs: completion rate by platform, shift over time (last 6 months = recent), wishlist vs owned targeting, forward implication vs platform strategy.
-
-## Section 8 — All-Time Personal Rating Leaderboard + Final Summary
-### All-Time Top 10 — numbered list, name + rating only
-### Recently Completed (Last 3 Months) — bullets, name + rating + all-time rank
-### Final Summary — 3–5 sentences: most important action now, highest-ceiling game on deck, one forward-looking observation`;
 
 // Helper: get active prompt from config or fall back to default
 function getPrompt(config, key, defaultPrompt){
@@ -2275,7 +2214,6 @@ function SetupScreen({ onComplete }){
             projection: DEFAULT_PROJECTION_PROMPT,
             reports: [
               {id:"weekly", name:"Weekly Report", prompt: DEFAULT_WEEKLY_PROMPT},
-              {id:"monthly", name:"Monthly Backlog Guide", prompt: DEFAULT_MONTHLY_PROMPT},
             ]
           };
           await pushToConfigGist(gt.trim(), defaultConfig);
@@ -2678,7 +2616,7 @@ function App(){
 
         <div style={{ marginTop:14, padding:"8px 12px", background:"#0a1628", border:"1px solid #1e293b", borderRadius:4, fontSize:9, letterSpacing:1, display:"flex", gap:20, flexWrap:"wrap", alignItems:"center" }}>
           <span style={{ color:"#334155" }}>GIST: {GIST_ID.slice(0,12)}…</span>
-          <span style={{ marginLeft:"auto", color:"#a78bfa" }}>GVI LIBRARY TRACKER v8 — GIST SYNC + REPORT + INSIGHTS</span>
+          <span style={{ marginLeft:"auto", color:"#a78bfa" }}>GVI LIBRARY TRACKER v9 — GIST SYNC + REPORT + INSIGHTS</span>
         </div>
       </div>
 
