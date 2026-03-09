@@ -503,6 +503,8 @@ function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre,onSaveFie
   const[priceVal,setPriceVal]=useState(g.price?.toString()||"");
   const[editingPurchaseDate,setEditingPurchaseDate]=useState(false);
   const[purchaseDateVal,setPurchaseDateVal]=useState(g.purchaseDate||"");
+  const[editingPlatform,setEditingPlatform]=useState(false);
+  const[platformVal,setPlatformVal]=useState(g.platform||"");
 
   // Re-sync local state when the game object is updated externally (e.g. after projection save)
   React.useEffect(()=>{
@@ -510,20 +512,35 @@ function OwnedDetail({g,onClose,onScore,onStart,onSaveNote,onSaveGenre,onSaveFie
     setGenreVal(g.genres||[]);
     setPriceVal(g.price?.toString()||"");
     setPurchaseDateVal(g.purchaseDate||"");
+    setPlatformVal(g.platform||"");
   },[g]);
   const canScore=g.status==="In Progress"||g.status==="Completed"||g.status==="Abandoned";
   const canStart=g.status==="Not Started";
   function saveNote(){onSaveNote(noteVal);setEditingNote(false);}
   function savePrice(){onSaveField({price:priceVal?parseFloat(priceVal):0});setEditingPrice(false);}
   function savePurchaseDate(){onSaveField({purchaseDate:purchaseDateVal});setEditingPurchaseDate(false);}
+  function savePlatform(){onSaveField({platform:platformVal});setEditingPlatform(false);}
   return(
     <div style={{background:"transparent",padding:"4px 0",animation:"fadeIn 0.2s ease"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
         <div>
           <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9",marginBottom:5}}>{g.title}</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
             <Tag color={STATUS_COLORS[g.status]} bg={STATUS_BG[g.status]}>{(g.status||"").toUpperCase()}</Tag>
-            <Tag>{g.platform}</Tag>
+            {editingPlatform?(
+              <span style={{display:"flex",gap:4,alignItems:"center"}}>
+                <select value={platformVal} onChange={e=>setPlatformVal(e.target.value)} autoFocus
+                  style={{background:"#060e1e",border:"1px solid #7c3aed",borderRadius:3,padding:"2px 6px",color:"#e2e8f0",fontFamily:"monospace",fontSize:11,outline:"none"}}>
+                  {VALID_PLATFORMS.map(p=><option key={p} value={p}>{p}</option>)}
+                </select>
+                <Btn size="sm" variant="success" onClick={savePlatform}>✓</Btn>
+                <Btn size="sm" variant="ghost" onClick={()=>{setPlatformVal(g.platform||"");setEditingPlatform(false);}}>✕</Btn>
+              </span>
+            ):(
+              <span onClick={()=>setEditingPlatform(true)} title="Click to edit platform" style={{cursor:"pointer"}}>
+                <Tag>{g.platform||"—"} <span style={{fontSize:8,color:"#334155"}}>✎</span></Tag>
+              </span>
+            )}
             {g.purchaseDate&&<Tag color="#64748b">BOUGHT {g.purchaseDate}</Tag>}
             {g.completionDate&&<Tag color="#64748b">COMPLETED {g.completionDate}</Tag>}
           </div>
@@ -966,9 +983,23 @@ function ConfirmPurchaseModal({game, onConfirm, onClose}){
   );
 }
 
-function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre}){
+function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre,onSaveField}){
   const[wishGenreVal,setWishGenreVal]=useState(g.genres||[]);
   const[showBuyModal,setShowBuyModal]=useState(false);
+  const[editingPlatform,setEditingPlatform]=useState(false);
+  const[platformVal,setPlatformVal]=useState(g.platform||"");
+  const[editingPrice,setEditingPrice]=useState(false);
+  const[priceVal,setPriceVal]=useState(g.targetPrice?.toString()||"");
+
+  React.useEffect(()=>{
+    setWishGenreVal(g.genres||[]);
+    setPlatformVal(g.platform||"");
+    setPriceVal(g.targetPrice?.toString()||"");
+  },[g]);
+
+  function savePlatform(){onSaveField({platform:platformVal});setEditingPlatform(false);}
+  function savePrice(){onSaveField({targetPrice:priceVal?parseFloat(priceVal):null});setEditingPrice(false);}
+
   return(
     <>
     {showBuyModal&&<ConfirmPurchaseModal game={g} onConfirm={(price,date)=>{setShowBuyModal(false);onBuy(g,price,date);}} onClose={()=>setShowBuyModal(false)}/>}
@@ -976,9 +1007,37 @@ function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre}){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
         <div>
           <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9",marginBottom:5}}>{g.title}</div>
-          <div style={{display:"flex",gap:6}}>
-            <Tag>{g.platform||"Platform TBD"}</Tag>
-            <Tag color="#facc15">TARGET: ${g.targetPrice?.toFixed(2)??"—"}</Tag>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+            {/* Editable platform */}
+            {editingPlatform?(
+              <span style={{display:"flex",gap:4,alignItems:"center"}}>
+                <select value={platformVal} onChange={e=>setPlatformVal(e.target.value)} autoFocus
+                  style={{background:"#060e1e",border:"1px solid #7c3aed",borderRadius:3,padding:"2px 6px",color:"#e2e8f0",fontFamily:"monospace",fontSize:11,outline:"none"}}>
+                  <option value="">— none —</option>
+                  {VALID_PLATFORMS.map(p=><option key={p} value={p}>{p}</option>)}
+                </select>
+                <Btn size="sm" variant="success" onClick={savePlatform}>✓</Btn>
+                <Btn size="sm" variant="ghost" onClick={()=>{setPlatformVal(g.platform||"");setEditingPlatform(false);}}>✕</Btn>
+              </span>
+            ):(
+              <span onClick={()=>setEditingPlatform(true)} title="Click to edit platform" style={{cursor:"pointer"}}>
+                <Tag>{g.platform||"Platform TBD"} <span style={{fontSize:8,color:"#334155"}}>✎</span></Tag>
+              </span>
+            )}
+            {/* Editable target price */}
+            {editingPrice?(
+              <span style={{display:"flex",gap:4,alignItems:"center"}}>
+                <span style={{fontSize:10,color:"#facc15",fontFamily:"monospace"}}>$</span>
+                <input type="number" value={priceVal} onChange={e=>setPriceVal(e.target.value)} step="0.01" min={0} autoFocus
+                  style={{width:70,background:"#060e1e",border:"1px solid #7c3aed",borderRadius:3,padding:"2px 6px",color:"#e2e8f0",fontFamily:"monospace",fontSize:11,outline:"none"}}/>
+                <Btn size="sm" variant="success" onClick={savePrice}>✓</Btn>
+                <Btn size="sm" variant="ghost" onClick={()=>{setPriceVal(g.targetPrice?.toString()||"");setEditingPrice(false);}}>✕</Btn>
+              </span>
+            ):(
+              <span onClick={()=>setEditingPrice(true)} title="Click to edit target price" style={{cursor:"pointer"}}>
+                <Tag color="#facc15">TARGET: ${g.targetPrice?.toFixed(2)??"—"} <span style={{fontSize:8,color:"#78716c"}}>✎</span></Tag>
+              </span>
+            )}
             {g.isStub&&<Tag color="#fb923c">STUB — NEEDS NOTE</Tag>}
           </div>
         </div>
@@ -1931,13 +1990,17 @@ function DataGapsTab({ owned, wishlist, onSaveOwned, onSaveWishlist, onProject }
 
   // Compute gaps
   const ownedGaps = owned
-    .filter(g => !g.projRating || !g.notes?.trim() ||
-      ((g.status === "In Progress" || g.status === "Not Started") && !g.estHours))
+    .filter(g => {
+      const needsProj = (g.status === "In Progress" || g.status === "Not Started") && !g.projRating;
+      const needsNote = !g.notes?.trim();
+      const needsHours = (g.status === "In Progress" || g.status === "Not Started") && !g.estHours;
+      return needsProj || needsNote || needsHours;
+    })
     .map(g => ({
       ...g,
       _source: "owned",
       _missing: [
-        !g.projRating && "PROJ RATING",
+        ((g.status === "In Progress" || g.status === "Not Started") && !g.projRating) && "PROJ RATING",
         !g.notes?.trim() && "NOTE",
         ((g.status === "In Progress" || g.status === "Not Started") && !g.estHours) && "EST HOURS",
       ].filter(Boolean),
@@ -2792,8 +2855,12 @@ function App(){
         <StatsBar owned={owned} wishlist={wishlist} onKpiClick={handleKpiClick}/>
         {(() => {
           const gapCount = [
-            ...owned.filter(g => !g.projRating || !g.notes?.trim() ||
-              ((g.status==="In Progress"||g.status==="Not Started") && !g.estHours)),
+            ...owned.filter(g => {
+              const needsProj = (g.status==="In Progress"||g.status==="Not Started") && !g.projRating;
+              const needsNote = !g.notes?.trim();
+              const needsHours = (g.status==="In Progress"||g.status==="Not Started") && !g.estHours;
+              return needsProj || needsNote || needsHours;
+            }),
             ...wishlist.filter(g => !g.projRating || !g.notes?.trim() || !g.targetPrice || !g.platform),
           ].length;
           return (
@@ -2864,6 +2931,7 @@ function App(){
                 onBuy={handleBuy}
                 onProject={item=>setProjectionModal({game:item,source:"wishlist"})}
                 onSaveGenre={genres=>{ const u=wishlist.map(g=>g.title===selectedWish.title?{...g,genres}:g); setWishlist(u); setSelectedWish({...selectedWish,genres}); doSave(owned,u); }}
+                onSaveField={fields=>{ const u=wishlist.map(g=>g.title===selectedWish.title?{...g,...fields}:g); setWishlist(u); setSelectedWish({...selectedWish,...fields}); doSave(owned,u); }}
               />
               )}
             </Drawer>
