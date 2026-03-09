@@ -420,9 +420,11 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
       const data=await res.json();
       const items=data.items||data||[];
       const currentTitles=new Set(currentWishlist.map(w=>normalizeTitle(w.title)));
+      const currentUrls=new Set(currentWishlist.map(w=>w.dekuLink).filter(Boolean));
       const newItems=items.filter(item=>{
         const name=(item.name||item.title||"").trim();
-        return name&&!currentTitles.has(normalizeTitle(name));
+        const url=item.url||`https://www.dekudeals.com/items/${(item.slug||"")}`;
+        return name&&!currentTitles.has(normalizeTitle(name))&&!currentUrls.has(url);
       });
       setResult({total:items.length,newItems});
     }catch(e){
@@ -438,9 +440,11 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
       const data=JSON.parse(pasteText);
       const items=data.items||data||[];
       const currentTitles=new Set(currentWishlist.map(w=>normalizeTitle(w.title)));
+      const currentUrls=new Set(currentWishlist.map(w=>w.dekuLink).filter(Boolean));
       const newItems=items.filter(item=>{
         const name=(item.name||item.title||"").trim();
-        return name&&!currentTitles.has(normalizeTitle(name));
+        const url=item.url||`https://www.dekudeals.com/items/${(item.slug||"")}`;
+        return name&&!currentTitles.has(normalizeTitle(name))&&!currentUrls.has(url);
       });
       setPasteResult({total:items.length,newItems});
     }catch(e){setPasteResult({error:"Invalid JSON — make sure you pasted the full response from the URL"});}
@@ -3063,7 +3067,8 @@ function App(){
 
   const handleDekuSync = (stubs) => {
     const existingTitles = new Set([...inbox, ...wishlist, ...owned].map(g => normalizeTitle(g.title)));
-    const newStubs = stubs.filter(s => !existingTitles.has(normalizeTitle(s.title)));
+    const existingUrls = new Set([...inbox, ...wishlist, ...owned].map(g => g.dekuLink).filter(Boolean));
+    const newStubs = stubs.filter(s => !existingTitles.has(normalizeTitle(s.title)) && !existingUrls.has(s.dekuLink));
     const ni = [...inbox, ...newStubs];
     setInbox(ni); doSave(owned, wishlist, ni);
     showToast(`${newStubs.length} new stub${newStubs.length===1?"":"s"} added to Inbox${stubs.length-newStubs.length>0?` · ${stubs.length-newStubs.length} duplicates skipped`:""}`, "success");
