@@ -2093,8 +2093,13 @@ Generate a FRESH projection based solely on the inputs above and the player prof
 
   if(!inbox.length){
     return (
-      <div style={{ textAlign:"center", padding:"64px 20px", color:"#475569", fontFamily:FF, fontSize:13 }}>
-        Inbox is empty — sync from Deku Deals to populate it.
+      <div>
+        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:16 }}>
+          <Btn variant="ghost" onClick={onDekuSync}>⟳ SYNC DEKU DEALS</Btn>
+        </div>
+        <div style={{ textAlign:"center", padding:"64px 20px", color:"#475569", fontFamily:FF, fontSize:13 }}>
+          Inbox is empty — sync from Deku Deals to populate it.
+        </div>
       </div>
     );
   }
@@ -2179,8 +2184,6 @@ Generate a FRESH projection based solely on the inputs above and the player prof
                   <span style={{ fontSize:12, fontWeight:600, color:"#e2e8f0", fontFamily:FF }}>{g.title}</span>
                   {g.platform && <span style={{ fontSize:9, color:"#64748b", fontFamily:FM }}>{g.platform}</span>}
                   {g.targetPrice && <span style={{ fontSize:9, color:"#facc15", fontFamily:FM }}>${g.targetPrice.toFixed(2)}</span>}
-                  {g.dekuLink && <a href={g.dekuLink} target="_blank" rel="noreferrer"
-                    style={{ fontSize:9, color:"#a78bfa", fontFamily:FM, textDecoration:"none" }}>DEKU ↗</a>}
                 </div>
 
                 {/* Result row */}
@@ -2209,6 +2212,15 @@ Generate a FRESH projection based solely on the inputs above and the player prof
                 {phase === "running" && !res && progress >= inbox.indexOf(g) && (
                   <div style={{ fontSize:10, color:"#475569", fontFamily:FM }}>waiting…</div>
                 )}
+              </div>
+
+              {/* Deku link — always rightmost */}
+              <div style={{ flexShrink:0, width:36, textAlign:"center" }}>
+                {g.dekuLink
+                  ? <a href={g.dekuLink} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}
+                      style={{ color:"#94a3b8", fontSize:14, textDecoration:"none" }} title="Open on Deku Deals">↗</a>
+                  : <span style={{ color:"#1e293b", fontSize:14 }}>↗</span>
+                }
               </div>
             </div>
           );
