@@ -449,7 +449,7 @@ function DekuSyncModal({currentWishlist,onSync,onClose}){
   const confirmSync=(items)=>{
     const stubs=items.map(item=>({
       title: fixEncoding((item.name||item.title||"").trim()),
-      targetPrice:item.desired_price||item.lowest_price?.amount||item.price||null,
+      targetPrice:(v=>v!=null&&v!==""?parseFloat(v)||null:null)(item.desired_price??item.lowest_price?.amount??item.price),
       platform:"",projGVI:null,projRating:null,
       dekuLink:item.url||`https://www.dekudeals.com/items/${(item.slug||"")}`,
       isStub:true,
@@ -997,7 +997,7 @@ function ConfirmPurchaseModal({game, onConfirm, onClose}){
         <div style={{fontSize:11,color:"#64748b",marginBottom:20}}>{game.platform}</div>
         <div style={{marginBottom:14}}>
           <Lbl>ACTUAL PURCHASE PRICE ($)</Lbl>
-          {game.targetPrice!=null&&<div style={{fontSize:9,color:"#475569",marginBottom:4,fontFamily:"monospace"}}>Target was ${game.targetPrice.toFixed(2)}</div>}
+          {game.targetPrice!=null&&<div style={{fontSize:9,color:"#475569",marginBottom:4,fontFamily:"monospace"}}>Target was ${parseFloat(game.targetPrice).toFixed(2)}</div>}
           <Inp type="number" value={price} onChange={setPrice} step="0.01" min={0}/>
         </div>
         <div style={{marginBottom:20}}>
@@ -1065,7 +1065,7 @@ function WishlistDetail({g,onClose,onBuy,onProject,onSaveGenre,onSaveField}){
               </span>
             ):(
               <span onClick={()=>setEditingPrice(true)} title="Click to edit target price" style={{cursor:"pointer"}}>
-                <Tag color="#facc15">TARGET: ${g.targetPrice?.toFixed(2)??"—"} <span style={{fontSize:8,color:"#78716c"}}>✎</span></Tag>
+                <Tag color="#facc15">TARGET: ${g.targetPrice!=null?parseFloat(g.targetPrice).toFixed(2):"—"} <span style={{fontSize:8,color:"#78716c"}}>✎</span></Tag>
               </span>
             )}
             {g.isStub&&<Tag color="#fb923c">STUB — NEEDS NOTE</Tag>}
@@ -1197,7 +1197,7 @@ function WishlistTable({items,onSelect,selected,sortKey,sortDir,onSortChange}){
                 <td style={{padding:"8px 8px",textAlign:"right",fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:"#334155",borderBottom:"1px solid #0f172a"}}>{i+1}</td>
                 <td style={{padding:"8px 12px",fontSize:12,fontFamily:"'Inter',sans-serif",fontWeight:500,color:g.isStub?"#fb923c":"#e2e8f0",borderBottom:"1px solid #0f172a",maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.title}{g.isStub?" ✦":""}</td>
                 <td style={{padding:"8px 12px",fontSize:11,fontFamily:"'Inter',sans-serif",color:"#94a3b8",borderBottom:"1px solid #0f172a"}}>{g.platform||"—"}</td>
-                <td style={{padding:"8px 12px",fontFamily:"monospace",fontSize:12,color:"#94a3b8",borderBottom:"1px solid #0f172a"}}>{g.targetPrice!=null?`$${g.targetPrice.toFixed(2)}`:"—"}</td>
+                <td style={{padding:"8px 12px",fontFamily:"monospace",fontSize:12,color:"#94a3b8",borderBottom:"1px solid #0f172a"}}>{g.targetPrice!=null?`$${parseFloat(g.targetPrice).toFixed(2)}`:"—"}</td>
                 <td style={{padding:"8px 12px",fontFamily:"monospace",fontSize:13,fontWeight:700,color:gviColor(g.projGVI),borderBottom:"1px solid #0f172a"}}>{gviLabel(g.projGVI)}</td>
                 <td style={{padding:"8px 12px",borderBottom:"1px solid #0f172a",minWidth:130}}><RatingBar v={g.projRating}/></td>
                 <td style={{padding:"8px 12px",borderBottom:"1px solid #0f172a"}}>{g.dekuLink&&<a href={g.dekuLink} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{color:"#94a3b8",fontSize:12,textDecoration:"none"}}>↗</a>}</td>
@@ -2218,7 +2218,7 @@ function InboxTab({ inbox, config, onGraduate, onDekuSync }) {
 
               {/* Target $ */}
               <div style={{ fontSize:11, color:"#facc15", fontFamily:FM, textAlign:"right" }}>
-                {g.targetPrice != null ? `$${g.targetPrice.toFixed(2)}` : <span style={{color:"#334155"}}>—</span>}
+                {g.targetPrice != null ? `$${parseFloat(g.targetPrice).toFixed(2)}` : <span style={{color:"#334155"}}>—</span>}
               </div>
 
               {/* Proj Rating */}
