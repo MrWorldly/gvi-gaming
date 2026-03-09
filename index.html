@@ -2949,43 +2949,57 @@ function App(){
       const XLS = window.XLSX;
       const wb = XLS.utils.book_new();
 
+      // Helper: parse M/D/YYYY date string → Excel serial number
+      const toExcelDate = (str) => {
+        if(!str) return "";
+        const [m,d,y] = str.split("/").map(Number);
+        if(!m||!d||!y) return str;
+        const jsDate = new Date(y, m-1, d);
+        // Excel serial: days since 1899-12-30
+        return Math.floor((jsDate - new Date(1899,11,30)) / 86400000);
+      };
+
+      // Number format codes
+      const FMT_DATE  = "mm/dd/yyyy";
+      const FMT_GVI   = "0.000";
+      const FMT_SCORE = "0.000";
+
       // ── SHEET 1: OWNED ──────────────────────────────────────────────────────
-      // Logical column order:
       // A=Title B=Platform C=Status D=Purchase Date E=Completed Date F=Price Paid
       // G=Hours Played H=Est Hours I=Difficulty
       // J=Gameplay K=Story L=Art M=Music/Sound N=Replay
-      // O=Personal Rating (formula) P=Base GVI (formula) Q=Completion Adj (formula) R=Final GVI (formula)
-      // S=Proj Rating T=Proj GVI U=GVI Delta
+      // O=Personal Rating P=Base GVI Q=Completion Adj R=Final GVI
+      // S=Actual GVI (stored) T=GVI Delta U=Rating Delta
+      // V=Proj Rating W=Proj GVI
+      // X=Genres
 
       const ownedHeaders = [
         "Title","Platform","Status","Purchase Date","Completed Date","Price Paid",
         "Hours Played","Est Hours","Difficulty",
         "Gameplay","Story","Art","Music/Sound","Replay",
         "Personal Rating","Base GVI","Completion Adj","Final GVI",
-        "Proj Rating","Proj GVI","GVI Delta"
+        "Actual GVI","GVI Delta","Rating Delta",
+        "Proj Rating","Proj GVI",
+        "Genres"
       ];
 
       const ownedRows = owned.map((g, i) => {
         const row = i + 2;
-        // Score columns: J=10 K=11 L=12 M=13 N=14
+        const C=`C${row}`, F=`F${row}`, G=`G${row}`, I=`I${row}`, O=`O${row}`, P=`P${row}`, Q=`Q${row}`;
         const J=`J${row}`, K=`K${row}`, L=`L${row}`, M=`M${row}`, N=`N${row}`;
-        // Other input columns
-        const F=`F${row}`, G=`G${row}`, I=`I${row}`, C=`C${row}`;
-        // Calculated columns
-        const O=`O${row}`, P=`P${row}`, Q=`Q${row}`;
 
-        const personalRating  = `IFERROR((${J}*0.35)+(${K}*0.25)+(${L}*0.20)+(${M}*0.15)+(${N}*0.05),"")`;
-        const hoursComp       = `IF(${G}<=20,0.8,IF(${G}<=40,0.9,IF(${G}<=70,1.0,IF(${G}<=90,0.9,0.8))))*0.25`;
-        const baseGVI         = `IFERROR((${O}/10*0.5)+(${hoursComp})+((70-MIN(70,MAX(0,${F})))/69*0.25),"")`;
-        const compAdj         = `IFERROR(IF(${C}="Completed",${I}*0.01,IF(${C}="Abandoned",-(${I}*0.01),0)),"")`;
-        const finalGVI        = `IFERROR(${P}+${Q},"")`;
+        const personalRating = `IFERROR((${J}*0.35)+(${K}*0.25)+(${L}*0.20)+(${M}*0.15)+(${N}*0.05),"")`;
+        const hoursComp      = `IF(${G}<=20,0.8,IF(${G}<=40,0.9,IF(${G}<=70,1.0,IF(${G}<=90,0.9,0.8))))*0.25`;
+        const baseGVI        = `IFERROR((${O}/10*0.5)+(${hoursComp})+((70-MIN(70,MAX(0,${F})))/69*0.25),"")`;
+        const compAdj        = `IFERROR(IF(${C}="Completed",${I}*0.01,IF(${C}="Abandoned",-(${I}*0.01),0)),"")`;
+        const finalGVI       = `IFERROR(${P}+${Q},"")`;
 
         return [
           g.title || "",
           g.platform || "",
           g.status || "",
-          g.purchaseDate || "",
-          g.completionDate || "",
+          toExcelDate(g.purchaseDate),
+          toExcelDate(g.completionDate),
           g.price ?? "",
           g.hoursPlayed ?? "",
           g.estHours ?? "",
@@ -2999,59 +3013,86 @@ function App(){
           { f: baseGVI },
           { f: compAdj },
           { f: finalGVI },
+          g.actualGVI ?? "",
+          g.gviDelta ?? "",
+          g.ratingDelta ?? "",
           g.projRating ?? "",
           g.projGVI ?? "",
-          g.gviDelta ?? "",
+          (g.genres||[]).join(", "),
         ];
       });
 
       const ws1 = XLS.utils.aoa_to_sheet([ownedHeaders, ...ownedRows]);
 
-      // Excel table (ListObject) — enables filter/sort/banded rows automatically
-      const ownedRef = `A1:U${owned.length + 1}`;
+      // Apply cell formats
+      const numRows = owned.length;
+      for(let i = 0; i < numRows; i++){
+        const r = i + 2;
+        // Date columns D, E (indices 3,4)
+        ["D","E"].forEach(col => {
+          const cell = ws1[`${col}${r}`];
+          if(cell && cell.v !== "") { cell.t = "n"; cell.z = FMT_DATE; }
+        });
+        // GVI columns P,Q,R,S,T,U,W (indices 15-19,22) — 3 decimal
+        ["P","Q","R","S","T","U","W"].forEach(col => {
+          const cell = ws1[`${col}${r}`];
+          if(cell) cell.z = FMT_GVI;
+        });
+        // Personal rating O and proj rating V — 3 decimal
+        ["O","V"].forEach(col => {
+          const cell = ws1[`${col}${r}`];
+          if(cell) cell.z = FMT_SCORE;
+        });
+      }
+
+      const ownedRef = `A1:X${numRows + 1}`;
       ws1["!autofilter"] = { ref: ownedRef };
       ws1["!tables"] = [{
-        ref: ownedRef,
-        name: "OwnedLibrary",
-        displayName: "OwnedLibrary",
-        headerRowCount: 1,
-        totalsRowCount: 0,
+        ref: ownedRef, name: "OwnedLibrary", displayName: "OwnedLibrary",
+        headerRowCount: 1, totalsRowCount: 0,
         tableStyleInfo: { name: "TableStyleMedium2", showFirstColumn: false, showLastColumn: false, showRowStripes: true, showColumnStripes: false }
       }];
-
       ws1["!cols"] = [
         {wch:32},{wch:10},{wch:12},{wch:13},{wch:14},{wch:11},
         {wch:12},{wch:10},{wch:10},
         {wch:10},{wch:8},{wch:6},{wch:12},{wch:8},
         {wch:15},{wch:10},{wch:14},{wch:10},
-        {wch:11},{wch:10},{wch:10}
+        {wch:11},{wch:10},{wch:12},
+        {wch:11},{wch:10},
+        {wch:28}
       ];
 
       // ── SHEET 2: WISHLIST ────────────────────────────────────────────────────
-      const wishHeaders = ["Title","Platform","Target Price","Proj Rating","Proj GVI","Deku Link"];
+      const wishHeaders = ["Title","Platform","Target Price","Proj Rating","Proj GVI","Genres","Deku Link"];
       const wishRows = wishlist.map(g => [
         g.title || "",
         g.platform || "",
         g.targetPrice ?? "",
         g.projRating ?? "",
         g.projGVI ?? "",
+        (g.genres||[]).join(", "),
         g.dekuLink || "",
       ]);
 
       const ws2 = XLS.utils.aoa_to_sheet([wishHeaders, ...wishRows]);
 
-      const wishRef = `A1:F${wishlist.length + 1}`;
+      // Format proj rating + GVI columns
+      for(let i = 0; i < wishlist.length; i++){
+        const r = i + 2;
+        ["D","E"].forEach(col => {
+          const cell = ws2[`${col}${r}`];
+          if(cell) cell.z = FMT_GVI;
+        });
+      }
+
+      const wishRef = `A1:G${wishlist.length + 1}`;
       ws2["!autofilter"] = { ref: wishRef };
       ws2["!tables"] = [{
-        ref: wishRef,
-        name: "Wishlist",
-        displayName: "Wishlist",
-        headerRowCount: 1,
-        totalsRowCount: 0,
+        ref: wishRef, name: "Wishlist", displayName: "Wishlist",
+        headerRowCount: 1, totalsRowCount: 0,
         tableStyleInfo: { name: "TableStyleMedium2", showFirstColumn: false, showLastColumn: false, showRowStripes: true, showColumnStripes: false }
       }];
-
-      ws2["!cols"] = [{wch:32},{wch:10},{wch:13},{wch:12},{wch:10},{wch:48}];
+      ws2["!cols"] = [{wch:32},{wch:10},{wch:13},{wch:12},{wch:10},{wch:28},{wch:48}];
 
       XLS.utils.book_append_sheet(wb, ws1, "Owned");
       XLS.utils.book_append_sheet(wb, ws2, "Wishlist");
